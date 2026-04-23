@@ -1,0 +1,80 @@
+server:
+  port: 80
+  address: 0.0.0.0
+
+spring:
+  main:
+    banner-mode: log
+
+lavalink:
+  plugins:
+    # Plugin de fuentes adicionales (Spotify, Apple Music, Deezer)
+    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.2.0"
+      repository: "https://maven.topi.wtf/releases"
+
+  server:
+    password: "youshallnotpass"
+    sources:
+      youtube: true
+      bandcamp: true
+      soundcloud: true
+      twitch: true
+      vimeo: true
+      http: true
+      local: false
+    filters:
+      volume: true
+      equalizer: true
+      karaoke: true
+      timescale: true
+      tremolo: true
+      vibrato: true
+      distortion: true
+      rotation: true
+      channelMix: true
+      lowPass: true
+    bufferDurationMs: 400
+    frameBufferDurationMs: 5000
+    youtubePlaylistLoadLimit: 6
+    opusEncodingQuality: 10        # 0-10, 10 = mejor calidad (PRO)
+    resamplingQuality: HIGH        # LOW | MEDIUM | HIGH
+    trackStuckThresholdMs: 10000
+    useSeekGhosting: true
+    youtubeSearchEnabled: true
+    soundcloudSearchEnabled: true
+
+plugins:
+  lavasrc:
+    providers:
+      - "ytsearch:\"%ISRC%\""
+      - "ytsearch:%QUERY%"
+      - "scsearch:%QUERY%"
+    sources:
+      spotify: true
+      applemusic: false
+      deezer: false
+      yandexmusic: false
+    spotify:
+      clientId: ""           # Rellena con tu Spotify Client ID
+      clientSecret: ""       # Rellena con tu Spotify Client Secret
+      countryCode: "US"
+      playlistLoadLimit: 6
+      albumLoadLimit: 6
+
+metrics:
+  prometheus:
+    enabled: false
+    endpoint: /metrics
+
+sentry:
+  dsn: ""
+  environment: "production"
+
+logging:
+  file:
+    max-history: 30
+    max-size: 1GB
+  path: ./logs/
+  level:
+    root: INFO
+    lavalink: INFO

@@ -1,0 +1,26 @@
+{
+  "name": "ton618-music",
+  "version": "1.0.0",
+  "description": "Sistema de música Lavalink para TON618 Bot — PRO (alta calidad) / FREE (calidad estándar)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "deploy": "node scripts/deploy-music-commands.js",
+    "lavalink": "java -jar lavalink/Lavalink.jar",
+    "test": "node --test tests/"
+  },
+  "dependencies": {
+    "discord.js": "^14.25.1",
+    "shoukaku": "^4.2.3",
+    "kazagumo": "^3.1.5",
+    "dotenv": "^16.6.1",
+    "mongodb": "^7.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

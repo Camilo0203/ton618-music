@@ -1,0 +1,48 @@
+server:
+  port: 2334
+  address: 0.0.0.0
+
+spring:
+  main:
+    banner-mode: log
+
+lavalink:
+  server:
+    password: "youshallnotpass"
+    sources:
+      youtube: true
+      bandcamp: true
+      soundcloud: true
+      twitch: false
+      vimeo: false
+      http: false
+      local: false
+    filters:
+      volume: true
+      equalizer: false   # Filtros deshabilitados para FREE
+      karaoke: false
+      timescale: false
+      tremolo: false
+      vibrato: false
+      distortion: false
+      rotation: false
+      channelMix: false
+      lowPass: false
+    bufferDurationMs: 400
+    frameBufferDurationMs: 5000
+    youtubePlaylistLoadLimit: 1   # Solo 1 pista de playlists (FREE)
+    opusEncodingQuality: 3        # Calidad más baja para FREE
+    resamplingQuality: LOW
+    trackStuckThresholdMs: 10000
+    useSeekGhosting: false
+    youtubeSearchEnabled: true
+    soundcloudSearchEnabled: false
+
+metrics:
+  prometheus:
+    enabled: false
+
+logging:
+  level:
+    root: WARN
+    lavalink: INFO
