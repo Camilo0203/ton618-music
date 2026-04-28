@@ -24,6 +24,8 @@ class MusicManager {
     /** @type {Map<string, NodeJS.Timeout>} idleTimers por guildId */
     this.idleTimers = new Map();
 
+    const singleNode = LAVALINK_NODES.PRO.url === LAVALINK_NODES.FREE.url;
+
     const nodes = [
       {
         name: LAVALINK_NODES.FREE.name,
@@ -33,8 +35,8 @@ class MusicManager {
       },
     ];
 
-    // Solo añadir nodo PRO si tiene configuración distinta
-    if (LAVALINK_NODES.PRO.url !== LAVALINK_NODES.FREE.url) {
+    // Solo añadir nodo PRO si tiene configuración distinta al FREE
+    if (!singleNode) {
       nodes.unshift({
         name: LAVALINK_NODES.PRO.name,
         url: LAVALINK_NODES.PRO.url,
@@ -42,6 +44,9 @@ class MusicManager {
         secure: LAVALINK_NODES.PRO.secure,
       });
     }
+
+    // Si es un solo nodo físico, PRO usa el nodo "free"
+    this._nodeForTier = singleNode ? { pro: "free", free: "free" } : { pro: "pro", free: "free" };
 
     this.kazagumo = new Kazagumo(
       {
@@ -127,7 +132,7 @@ class MusicManager {
         textId: textChannelId,
         deaf: true,
         volume: Math.min(80, limits.maxVolume),
-        nodeName: limits.lavalinkNode,
+        nodeName: this._nodeForTier[tier] || "free",
       });
 
       player.tier = tier;
