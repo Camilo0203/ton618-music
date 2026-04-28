@@ -7,6 +7,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const { resolveGuildTier } = require("../utils/premiumResolver");
 const { errorEmbed, warningEmbed } = require("../utils/musicEmbeds");
+const { t, normalizeLanguage } = require("../utils/i18n");
 
 const UPGRADE_URL = process.env.PRO_UPGRADE_URL || "https://ton618.app/pricing";
 
@@ -26,7 +27,6 @@ const data = new SlashCommandBuilder()
   );
 
 const LOOP_EMOJIS = { track: "🔂", queue: "🔁", none: "❌" };
-const LOOP_LABELS = { track: "Pista", queue: "Cola", none: "Desactivado" };
 
 module.exports = {
   data,
@@ -35,11 +35,18 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
 
+    const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
+    const LOOP_LABELS = {
+      track: t(language, "label_track"),
+      queue: t(language, "label_queue"),
+      none: t(language, "label_disabled"),
+    };
+
     const musicManager = interaction.client.musicManager;
     const player = musicManager.kazagumo.players.get(interaction.guildId);
 
     if (!player) {
-      return interaction.editReply({ embeds: [errorEmbed("No hay ningún player activo.")] });
+      return interaction.editReply({ embeds: [errorEmbed(t(language, "loop_no_player"), language)] });
     }
 
     const mode = interaction.options.getString("modo");
@@ -49,8 +56,9 @@ module.exports = {
       return interaction.editReply({
         embeds: [
           warningEmbed(
-            `Repetir la cola completa es una función **PRO**. [Actualiza aquí](${UPGRADE_URL}).`,
-            tier
+            t(language, "loop_queue_pro_only", { url: UPGRADE_URL }),
+            tier,
+            language
           ),
         ],
       });
@@ -63,13 +71,9 @@ module.exports = {
       embeds: [
         new EmbedBuilder()
           .setColor(mode === "none" ? 0xed4245 : 0x5865f2)
-          .setTitle(`${LOOP_EMOJIS[mode]} Loop ${LOOP_LABELS[mode]}`)
-          .setDescription(
-            mode === "none"
-              ? "Repetición desactivada."
-              : `Modo repetición: **${LOOP_LABELS[mode]}** activado.`
-          )
-          .setFooter({ text: tier === "pro" ? "✨ PRO" : "🆓 FREE" }),
+          .setTitle(`${LOOP_EMOJIS[mode]} ${t(language, "loop_set", { label: LOOP_LABELS[mode] })}`)
+          .setDescription(t(language, "loop_set_desc", { mode: LOOP_LABELS[mode] }))
+          .setFooter({ text: tier === "pro" ? t(language, "tier_badge_pro") : t(language, "tier_badge_free") }),
       ],
     });
   },

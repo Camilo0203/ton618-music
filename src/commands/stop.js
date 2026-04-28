@@ -2,6 +2,7 @@
 
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const { errorEmbed } = require("../utils/musicEmbeds");
+const { t, normalizeLanguage } = require("../utils/i18n");
 
 const data = new SlashCommandBuilder()
   .setName("stop")
@@ -14,16 +15,17 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
 
+    const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
     const voiceChannel = interaction.member?.voice?.channel;
     if (!voiceChannel) {
-      return interaction.editReply({ embeds: [errorEmbed("Debes estar en un canal de voz.")] });
+      return interaction.editReply({ embeds: [errorEmbed(t(language, "stop_voice_required"), language)] });
     }
 
     const musicManager = interaction.client.musicManager;
     const player = musicManager.kazagumo.players.get(interaction.guildId);
 
     if (!player) {
-      return interaction.editReply({ embeds: [errorEmbed("No hay nada reproduciéndose ahora mismo.")] });
+      return interaction.editReply({ embeds: [errorEmbed(t(language, "stop_nothing_playing"), language)] });
     }
 
     await musicManager.destroyPlayer(interaction.guildId);
@@ -32,8 +34,8 @@ module.exports = {
       embeds: [
         new EmbedBuilder()
           .setColor(0xed4245)
-          .setTitle("⏹ Detenido")
-          .setDescription("La reproducción se detuvo y el bot se desconectó."),
+          .setTitle(t(language, "stop_stopped"))
+          .setDescription(t(language, "stop_stopped_desc")),
       ],
     });
   },

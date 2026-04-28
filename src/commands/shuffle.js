@@ -7,6 +7,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const { resolveGuildTier } = require("../utils/premiumResolver");
 const { errorEmbed, proOnlyEmbed } = require("../utils/musicEmbeds");
+const { t, normalizeLanguage } = require("../utils/i18n");
 
 const UPGRADE_URL = process.env.PRO_UPGRADE_URL || "https://ton618.app/pricing";
 
@@ -21,11 +22,12 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
 
+    const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
     const tier = await resolveGuildTier(interaction.guildId);
 
     if (tier !== "pro") {
       return interaction.editReply({
-        embeds: [proOnlyEmbed("Mezclar cola (Shuffle)", UPGRADE_URL)],
+        embeds: [proOnlyEmbed(t(language, "shuffle_pro_only"), UPGRADE_URL, language)],
       });
     }
 
@@ -33,7 +35,7 @@ module.exports = {
     const player = musicManager.kazagumo.players.get(interaction.guildId);
 
     if (!player || player.queue.size === 0) {
-      return interaction.editReply({ embeds: [errorEmbed("La cola está vacía.")] });
+      return interaction.editReply({ embeds: [errorEmbed(t(language, "shuffle_empty"), language)] });
     }
 
     player.queue.shuffle();
@@ -42,9 +44,9 @@ module.exports = {
       embeds: [
         new EmbedBuilder()
           .setColor(0x5865f2)
-          .setTitle("🔀 Cola mezclada")
-          .setDescription(`Se mezclaron **${player.queue.size}** pistas aleatoriamente.`)
-          .setFooter({ text: "✨ PRO" }),
+          .setTitle(t(language, "shuffle_done"))
+          .setDescription(t(language, "shuffle_done_desc", { count: player.queue.size }))
+          .setFooter({ text: t(language, "tier_badge_pro") }),
       ],
     });
   },

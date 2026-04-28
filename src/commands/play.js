@@ -19,6 +19,7 @@ const {
   warningEmbed,
   proOnlyEmbed,
 } = require("../utils/musicEmbeds");
+const { t, normalizeLanguage } = require("../utils/i18n");
 
 const UPGRADE_URL = process.env.PRO_UPGRADE_URL || "https://ton618.app/pricing";
 
@@ -39,12 +40,13 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
 
+    const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
     const member = interaction.member;
     const voiceChannel = member?.voice?.channel;
 
     if (!voiceChannel) {
       return interaction.editReply({
-        embeds: [errorEmbed("Debes estar en un canal de voz para usar este comando.")],
+        embeds: [errorEmbed(t(language, "error_voice_required"), language)],
       });
     }
 
@@ -52,7 +54,7 @@ module.exports = {
     const perms = voiceChannel.permissionsFor(botMember);
     if (!perms.has("Connect") || !perms.has("Speak")) {
       return interaction.editReply({
-        embeds: [errorEmbed("No tengo permisos para conectarme o hablar en tu canal de voz.")],
+        embeds: [errorEmbed(t(language, "error_bot_permissions"), language)],
       });
     }
 
@@ -67,7 +69,7 @@ module.exports = {
       query.includes("open.spotify.com") || query.includes("spotify:");
     if (isSpotify && !limits.spotifyEnabled) {
       return interaction.editReply({
-        embeds: [proOnlyEmbed("Reproducción de Spotify", UPGRADE_URL)],
+        embeds: [proOnlyEmbed(t(language, "spotify_pro_only"), UPGRADE_URL, language)],
       });
     }
 
@@ -85,7 +87,7 @@ module.exports = {
     } catch (err) {
       console.error("[play] Error creando player:", err?.message || err);
       return interaction.editReply({
-        embeds: [errorEmbed("No pude conectarme al canal de voz. ¿El servidor Lavalink está activo?")],
+        embeds: [errorEmbed(t(language, "error_lavalink"), language)],
       });
     }
 
@@ -94,20 +96,20 @@ module.exports = {
       result = await musicManager.search(query, tier);
     } catch (err) {
       return interaction.editReply({
-        embeds: [errorEmbed("Error buscando la canción. Inténtalo de nuevo.")],
+        embeds: [errorEmbed(t(language, "error_search"), language)],
       });
     }
 
     if (!result || !result.tracks || result.tracks.length === 0) {
       return interaction.editReply({
-        embeds: [errorEmbed(`No encontré resultados para: **${query}**`)],
+        embeds: [errorEmbed(t(language, "error_no_results", { query }), language)],
       });
     }
 
     // Playlists solo en PRO
     if (result.type === "PLAYLIST" && !limits.playlistEnabled) {
       return interaction.editReply({
-        embeds: [proOnlyEmbed("Reproducción de playlists completas", UPGRADE_URL)],
+        embeds: [proOnlyEmbed(t(language, "playlist_pro_only"), UPGRADE_URL, language)],
       });
     }
 
@@ -125,7 +127,7 @@ module.exports = {
       }
 
       return interaction.editReply({
-        embeds: [playlistAddedEmbed(result.playlistName || "Playlist", added, tier)],
+        embeds: [playlistAddedEmbed(result.playlistName || "Playlist", added, tier, language)],
       });
     }
 
@@ -140,35 +142,35 @@ module.exports = {
         const max = limits.maxQueue;
         const msg =
           tier === "free"
-            ? `La cola FREE está llena (máx. **${max}** pistas). [Actualiza a PRO](${UPGRADE_URL}) para colas de hasta **200 pistas**.`
-            : `La cola está llena (máx. **${max}** pistas).`;
-        return interaction.editReply({ embeds: [warningEmbed(msg, tier)] });
+            ? t(language, "error_queue_full_free", { max, url: UPGRADE_URL })
+            : t(language, "error_queue_full_pro", { max });
+        return interaction.editReply({ embeds: [warningEmbed(msg, tier, language)] });
       }
 
       if (enqueueResult.reason?.startsWith("too_long")) {
         const maxMin = Math.floor(limits.maxDurationSeconds / 60);
         const msg =
           tier === "free"
-            ? `Las pistas FREE no pueden superar **${maxMin} minutos**. [Actualiza a PRO](${UPGRADE_URL}) para pistas de hasta 6 horas.`
-            : `La pista supera la duración máxima de **${maxMin} minutos**.`;
-        return interaction.editReply({ embeds: [warningEmbed(msg, tier)] });
+            ? t(language, "error_too_long_free", { maxMin, url: UPGRADE_URL })
+            : t(language, "error_too_long_pro", { maxMin });
+        return interaction.editReply({ embeds: [warningEmbed(msg, tier, language)] });
       }
 
       return interaction.editReply({
-        embeds: [errorEmbed("No se pudo añadir la pista a la cola.")],
+        embeds: [errorEmbed(t(language, "error_add_track"), language)],
       });
     }
 
     if (!player.playing && !player.paused) {
       await player.play();
       return interaction.editReply({
-        embeds: [nowPlayingEmbed(track, player, tier)],
+        embeds: [nowPlayingEmbed(track, player, tier, language)],
       });
     }
 
     const position = player.queue.size;
     return interaction.editReply({
-      embeds: [addedToQueueEmbed(track, position, tier)],
+      embeds: [addedToQueueEmbed(track, position, tier, language)],
     });
   },
 };

@@ -3,6 +3,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const { resolveGuildTier } = require("../utils/premiumResolver");
 const { nowPlayingEmbed, errorEmbed, formatDuration } = require("../utils/musicEmbeds");
+const { t, normalizeLanguage } = require("../utils/i18n");
 
 const data = new SlashCommandBuilder()
   .setName("nowplaying")
@@ -15,16 +16,17 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
 
+    const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
     const musicManager = interaction.client.musicManager;
     const player = musicManager.kazagumo.players.get(interaction.guildId);
 
     if (!player || (!player.playing && !player.paused)) {
-      return interaction.editReply({ embeds: [errorEmbed("No hay nada reproduciéndose ahora mismo.")] });
+      return interaction.editReply({ embeds: [errorEmbed(t(language, "nowplaying_nothing"), language)] });
     }
 
     const current = player.queue.current;
     if (!current) {
-      return interaction.editReply({ embeds: [errorEmbed("No hay pista activa.")] });
+      return interaction.editReply({ embeds: [errorEmbed(t(language, "nowplaying_no_track"), language)] });
     }
 
     const tier = await resolveGuildTier(interaction.guildId);
@@ -37,8 +39,8 @@ module.exports = {
     const bar = "█".repeat(filled) + "░".repeat(BAR_LENGTH - filled);
     const progressText = `\`${formatDuration(position)}\` ${bar} \`${formatDuration(duration)}\``;
 
-    const embed = nowPlayingEmbed(current, player, tier);
-    embed.addFields({ name: "Progreso", value: progressText });
+    const embed = nowPlayingEmbed(current, player, tier, language);
+    embed.addFields({ name: t(language, "progress"), value: progressText });
 
     return interaction.editReply({ embeds: [embed] });
   },

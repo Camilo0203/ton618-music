@@ -3,6 +3,7 @@
 const { SlashCommandBuilder } = require("discord.js");
 const { resolveGuildTier } = require("../utils/premiumResolver");
 const { queueEmbed, errorEmbed } = require("../utils/musicEmbeds");
+const { t, normalizeLanguage } = require("../utils/i18n");
 
 const data = new SlashCommandBuilder()
   .setName("queue")
@@ -22,16 +23,17 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
 
+    const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
     const musicManager = interaction.client.musicManager;
     const player = musicManager.kazagumo.players.get(interaction.guildId);
 
     if (!player) {
-      return interaction.editReply({ embeds: [errorEmbed("No hay ningún player activo en este servidor.")] });
+      return interaction.editReply({ embeds: [errorEmbed(t(language, "queue_no_player"), language)] });
     }
 
     const tier = await resolveGuildTier(interaction.guildId);
     const page = interaction.options.getInteger("pagina") ?? 1;
 
-    return interaction.editReply({ embeds: [queueEmbed(player, tier, page)] });
+    return interaction.editReply({ embeds: [queueEmbed(player, tier, page, language)] });
   },
 };

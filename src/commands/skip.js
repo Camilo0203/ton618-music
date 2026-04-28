@@ -5,6 +5,7 @@ const { resolveGuildTier } = require("../utils/premiumResolver");
 const { errorEmbed, warningEmbed } = require("../utils/musicEmbeds");
 const { EmbedBuilder } = require("discord.js");
 const { TIER_LIMITS } = require("../config/lavalinkConfig");
+const { t, normalizeLanguage } = require("../utils/i18n");
 
 const data = new SlashCommandBuilder()
   .setName("skip")
@@ -25,16 +26,17 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
 
+    const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
     const voiceChannel = interaction.member?.voice?.channel;
     if (!voiceChannel) {
-      return interaction.editReply({ embeds: [errorEmbed("Debes estar en un canal de voz.")] });
+      return interaction.editReply({ embeds: [errorEmbed(t(language, "skip_voice_required"), language)] });
     }
 
     const musicManager = interaction.client.musicManager;
     const player = musicManager.kazagumo.players.get(interaction.guildId);
 
     if (!player || (!player.playing && !player.paused)) {
-      return interaction.editReply({ embeds: [errorEmbed("No hay nada reproduciéndose ahora mismo.")] });
+      return interaction.editReply({ embeds: [errorEmbed(t(language, "skip_nothing_playing"), language)] });
     }
 
     const tier = await resolveGuildTier(interaction.guildId);
@@ -45,8 +47,9 @@ module.exports = {
       return interaction.editReply({
         embeds: [
           warningEmbed(
-            `Saltar múltiples pistas a la vez es una función **PRO**. [Actualiza aquí](${process.env.PRO_UPGRADE_URL || "https://ton618.app/pricing"}).`,
-            tier
+            t(language, "skip_pro_only", { url: process.env.PRO_UPGRADE_URL || "https://ton618.app/pricing" }),
+            tier,
+            language
           ),
         ],
       });
@@ -62,8 +65,8 @@ module.exports = {
         embeds: [
           new EmbedBuilder()
             .setColor(0x57f287)
-            .setTitle("⏭ Saltado")
-            .setDescription(`Se saltó: **${skipped.title}**`),
+            .setTitle(t(language, "skip_single"))
+            .setDescription(t(language, "skip_single_desc", { title: skipped.title })),
         ],
       });
     }
@@ -72,8 +75,8 @@ module.exports = {
       embeds: [
         new EmbedBuilder()
           .setColor(0x57f287)
-          .setTitle("⏭ Saltadas")
-          .setDescription(`Se saltaron **${amount}** pistas.`),
+          .setTitle(t(language, "skip_multiple"))
+          .setDescription(t(language, "skip_multiple_desc", { amount })),
       ],
     });
   },

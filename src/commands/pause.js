@@ -2,6 +2,7 @@
 
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const { errorEmbed } = require("../utils/musicEmbeds");
+const { t, normalizeLanguage } = require("../utils/i18n");
 
 const data = new SlashCommandBuilder()
   .setName("pause")
@@ -14,16 +15,17 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
 
+    const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
     const voiceChannel = interaction.member?.voice?.channel;
     if (!voiceChannel) {
-      return interaction.editReply({ embeds: [errorEmbed("Debes estar en un canal de voz.")] });
+      return interaction.editReply({ embeds: [errorEmbed(t(language, "pause_voice_required"), language)] });
     }
 
     const musicManager = interaction.client.musicManager;
     const player = musicManager.kazagumo.players.get(interaction.guildId);
 
     if (!player) {
-      return interaction.editReply({ embeds: [errorEmbed("No hay ningún player activo.")] });
+      return interaction.editReply({ embeds: [errorEmbed(t(language, "pause_no_player"), language)] });
     }
 
     if (player.paused) {
@@ -32,8 +34,8 @@ module.exports = {
         embeds: [
           new EmbedBuilder()
             .setColor(0x57f287)
-            .setTitle("▶ Reanudado")
-            .setDescription("La reproducción ha sido reanudada."),
+            .setTitle(t(language, "pause_resumed"))
+            .setDescription(t(language, "pause_resumed_desc")),
         ],
       });
     } else {
@@ -42,8 +44,8 @@ module.exports = {
         embeds: [
           new EmbedBuilder()
             .setColor(0xfee75c)
-            .setTitle("⏸ Pausado")
-            .setDescription("La reproducción ha sido pausada. Usa `/pause` de nuevo para reanudar."),
+            .setTitle(t(language, "pause_paused"))
+            .setDescription(t(language, "pause_paused_desc")),
         ],
       });
     }

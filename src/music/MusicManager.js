@@ -51,7 +51,7 @@ class MusicManager {
           if (guild) guild.shard.send(payload);
         },
       },
-      new Connectors.DiscordJS(client),
+      new Connectors.DiscordJS(this.client),
       nodes,
       {
         reconnectTries: 3,
@@ -234,7 +234,9 @@ class MusicManager {
   _startIdleTimer(guildId) {
     this._clearIdleTimer(guildId);
     const timer = setTimeout(() => {
-      this.destroyPlayer(guildId).catch(() => {});
+      this.destroyPlayer(guildId).catch((err) => {
+        console.error(`[MusicManager] Failed to destroy idle player ${guildId}:`, err?.message || err);
+      });
       console.log(`[MusicManager] Player idle timeout — destroyed: ${guildId}`);
     }, IDLE_TIMEOUT_MS);
     this.idleTimers.set(guildId, timer);
