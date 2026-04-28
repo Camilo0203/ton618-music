@@ -27,7 +27,7 @@ module.exports = {
     await interaction.deferReply();
 
     const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
-    const voiceChannel = interaction.member?.voice?.channel;
+    const voiceChannel = interaction.guild?.members?.cache?.get(interaction.user.id)?.voice?.channel;
     if (!voiceChannel) {
       return interaction.editReply({ embeds: [errorEmbed(t(language, "skip_voice_required"), language)] });
     }

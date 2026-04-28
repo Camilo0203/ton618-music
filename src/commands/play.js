@@ -41,7 +41,7 @@ module.exports = {
     await interaction.deferReply();
 
     const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
-    const member = interaction.member;
+    const member = interaction.guild?.members?.cache?.get(interaction.user.id);
     const voiceChannel = member?.voice?.channel;
 
     if (!voiceChannel) {

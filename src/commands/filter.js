@@ -51,7 +51,7 @@ module.exports = {
       });
     }
 
-    const voiceChannel = interaction.member?.voice?.channel;
+    const voiceChannel = interaction.guild?.members?.cache?.get(interaction.user.id)?.voice?.channel;
     if (!voiceChannel) {
       return interaction.editReply({ embeds: [errorEmbed(t(language, "filter_voice_required"), language)] });
     }
