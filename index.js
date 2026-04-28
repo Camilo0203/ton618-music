@@ -46,15 +46,6 @@ client.once("ready", () => {
 
 client.on("interactionCreate", musicInteractionHandler);
 
-// Reenviar eventos de voz al MusicManager (necesario para Shoukaku)
-client.on("raw", (data) => {
-  if (["VOICE_SERVER_UPDATE", "VOICE_STATE_UPDATE"].includes(data.t)) {
-    if (client.musicManager?.kazagumo?.shoukaku) {
-      client.musicManager.kazagumo.shoukaku.updateVoiceData(data);
-    }
-  }
-});
-
 // Manejo de errores no capturados
 process.on("unhandledRejection", (reason) => {
   console.error("[TON618-Music] Unhandled rejection:", reason);
