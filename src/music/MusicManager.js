@@ -50,7 +50,7 @@ class MusicManager {
 
     this.kazagumo = new Kazagumo(
       {
-        defaultSearchEngine: "youtube",
+        defaultSearchEngine: "scsearch",
         send: (guildId, payload) => {
           const guild = this.client.guilds.cache.get(guildId);
           if (guild) guild.shard.send(payload);

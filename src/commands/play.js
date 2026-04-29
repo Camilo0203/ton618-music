@@ -61,7 +61,13 @@ module.exports = {
     const query = interaction.options.getString("query");
     const guildId = interaction.guildId;
 
-    const tier = await resolveGuildTier(guildId);
+    let tier;
+    try {
+      tier = await resolveGuildTier(guildId);
+    } catch (err) {
+      console.error("[play] Error resolving tier:", err?.message || err);
+      tier = "free";
+    }
     const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
 
     // Bloquear Spotify en FREE
@@ -75,6 +81,12 @@ module.exports = {
 
     /** @type {import('../music/MusicManager').MusicManager} */
     const musicManager = interaction.client.musicManager;
+    if (!musicManager) {
+      console.error("[play] musicManager is undefined — client not ready?");
+      return interaction.editReply({
+        embeds: [errorEmbed(t(language, "error_lavalink"), language)],
+      });
+    }
 
     let player;
     try {
@@ -95,6 +107,7 @@ module.exports = {
     try {
       result = await musicManager.search(query, tier);
     } catch (err) {
+      console.error("[play] Error en search:", err?.message || err);
       return interaction.editReply({
         embeds: [errorEmbed(t(language, "error_search"), language)],
       });
@@ -123,7 +136,14 @@ module.exports = {
       }
 
       if (!player.playing && !player.paused) {
-        await player.play();
+        try {
+          await player.play();
+        } catch (err) {
+          console.error("[play] Error en play playlist:", err?.message || err);
+          return interaction.editReply({
+            embeds: [errorEmbed(t(language, "error_play"), language)],
+          });
+        }
       }
 
       return interaction.editReply({
@@ -162,7 +182,14 @@ module.exports = {
     }
 
     if (!player.playing && !player.paused) {
-      await player.play();
+      try {
+        await player.play();
+      } catch (err) {
+        console.error("[play] Error en play track:", err?.message || err);
+        return interaction.editReply({
+          embeds: [errorEmbed(t(language, "error_play"), language)],
+        });
+      }
       return interaction.editReply({
         embeds: [nowPlayingEmbed(track, player, tier, language)],
       });
