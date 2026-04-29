@@ -52,7 +52,7 @@ module.exports = {
 
     const botMember = interaction.guild.members.me;
     const perms = voiceChannel.permissionsFor(botMember);
-    if (!perms.has("Connect") || !perms.has("Speak")) {
+    if (!perms.has("Connect") || !perms.has("Speak") || !perms.has("Use VAD")) {
       return interaction.editReply({
         embeds: [errorEmbed(t(language, "error_bot_permissions"), language)],
       });
