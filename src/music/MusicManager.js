@@ -150,7 +150,7 @@ class MusicManager {
    * @returns {Promise<KazagumoSearchResult>}
    */
   async search(query, tier = "free") {
-    const engine = tier === "pro" ? "youtube" : "youtube";
+    const engine = tier === "pro" ? "scsearch" : "scsearch";
     return this.kazagumo.search(query, { engine });
   }
 
