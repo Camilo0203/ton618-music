@@ -39,7 +39,7 @@ const TIER_LIMITS = {
     bitrate: 128000,        // 128 kbps
     lavalinkNode: "free",
     filters: false,         // Filtros de audio deshabilitados en FREE
-    spotifyEnabled: false,
+    spotifyEnabled: true,
     playlistEnabled: false,
   },
   pro: {
