@@ -10,6 +10,8 @@
  * y diferenciar la calidad vía los filtros de audio aplicados en MusicPlayer.
  */
 
+const { getTierLimitsFromEnv } = require("@ton618/shared");
+
 function requireEnv(key) {
   const val = process.env[key];
   if (!val) throw new Error(`Missing required env var: ${key}`);
@@ -30,28 +32,7 @@ const LAVALINK_NODES = {
   FREE: getNode("FREE"),
 };
 
-/** Límites configurables por tier desde variables de entorno */
-const TIER_LIMITS = {
-  free: {
-    maxQueue: parseInt(process.env.MUSIC_FREE_MAX_QUEUE || "10", 10),
-    maxVolume: parseInt(process.env.MUSIC_FREE_MAX_VOLUME || "80", 10),
-    maxDurationSeconds: parseInt(process.env.MUSIC_FREE_MAX_DURATION_SECONDS || "300", 10),
-    bitrate: 128000,        // 128 kbps
-    lavalinkNode: "free",
-    filters: false,         // Filtros de audio deshabilitados en FREE
-    spotifyEnabled: false,
-    playlistEnabled: false,
-  },
-  pro: {
-    maxQueue: parseInt(process.env.MUSIC_PRO_MAX_QUEUE || "200", 10),
-    maxVolume: parseInt(process.env.MUSIC_PRO_MAX_VOLUME || "100", 10),
-    maxDurationSeconds: parseInt(process.env.MUSIC_PRO_MAX_DURATION_SECONDS || "21600", 10),
-    bitrate: 320000,        // 320 kbps
-    lavalinkNode: "pro",
-    filters: true,          // Equalizer, bassboost, nightcore, etc. disponibles
-    spotifyEnabled: true,
-    playlistEnabled: true,
-  },
-};
+/** Límites centralizados en @ton618/shared, sobreescribibles vía env vars */
+const TIER_LIMITS = getTierLimitsFromEnv();
 
 module.exports = { LAVALINK_NODES, TIER_LIMITS };
