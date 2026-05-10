@@ -79,10 +79,7 @@ youtube:
   allowDirectVideoIds: true
   allowDirectPlaylistIds: true
   clients:
-    - MUSIC
-    - WEB
-    - WEBEMBEDDED
-    - ANDROID_TESTSUITE
+    - TVHTML5_SIMPLY
 
 logging:
   file:
