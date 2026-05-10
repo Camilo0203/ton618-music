@@ -4,3 +4,5 @@ MAIN=Lavalink.jar
 MEMORY=1280
 VERSION=recommended
 START=java -jar Lavalink.jar
+PORT=2333
+AUTORESTART=true
