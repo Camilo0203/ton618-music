@@ -11,11 +11,14 @@ lavalink:
     # Plugin de fuentes adicionales (Spotify, Apple Music, Deezer)
     - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.2.0"
       repository: "https://maven.topi.wtf/releases"
+    # Plugin obligatorio para YouTube en Lavalink v4
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.11.4"
+      snapshot: false
 
   server:
     password: "youshallnotpass"
     sources:
-      youtube: true
+      youtube: false
       bandcamp: true
       soundcloud: true
       twitch: true
@@ -69,6 +72,17 @@ metrics:
 sentry:
   dsn: ""
   environment: "production"
+
+youtube:
+  enabled: true
+  allowSearch: true
+  allowDirectVideoIds: true
+  allowDirectPlaylistIds: true
+  clients:
+    - MUSIC
+    - ANDROID_TESTSUITE
+    - WEB
+    - TVHTML5EMBEDDED
 
 logging:
   file:
