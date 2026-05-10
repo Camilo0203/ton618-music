@@ -69,7 +69,7 @@ plugins:
     allowDirectVideoIds: true
     allowDirectPlaylistIds: true
     clients:
-      - WEB
+      - MUSIC
     oauth:
       enabled: true
       clientId: "${YOUTUBE_OAUTH_CLIENT_ID}"
