@@ -107,7 +107,7 @@ module.exports = {
     try {
       result = await musicManager.search(query, tier);
     } catch (err) {
-      console.error("[play] Error en search:", err?.message || err);
+      console.error("[play] Error en search:", err?.message || err, err?.stack);
       return interaction.editReply({
         embeds: [errorEmbed(t(language, "error_search"), language)],
       });
