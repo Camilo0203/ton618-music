@@ -80,6 +80,12 @@ youtube:
   allowDirectPlaylistIds: true
   clients:
     - TVHTML5_SIMPLY
+    - WEB
+    - MUSIC
+  oauth:
+    enabled: true
+    clientId: "${YOUTUBE_OAUTH_CLIENT_ID}"
+    clientSecret: "${YOUTUBE_OAUTH_CLIENT_SECRET}"
 
 logging:
   file:
