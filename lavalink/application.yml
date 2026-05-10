@@ -69,7 +69,7 @@ plugins:
     allowDirectVideoIds: true
     allowDirectPlaylistIds: true
     clients:
-      - ANDROID_TESTSUITE
+      - WEB
     oauth:
       enabled: true
       clientId: "${YOUTUBE_OAUTH_CLIENT_ID}"
