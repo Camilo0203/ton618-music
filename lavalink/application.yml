@@ -46,7 +46,7 @@ lavalink:
 plugins:
   lavasrc:
     providers:
-      - "ytsearch:""%ISRC%"""
+      - "ytsearch:\"%ISRC%\""
       - "ytsearch:%QUERY%"
       - "scsearch:%QUERY%"
     sources:
