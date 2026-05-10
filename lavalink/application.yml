@@ -80,9 +80,9 @@ youtube:
   allowDirectPlaylistIds: true
   clients:
     - MUSIC
-    - ANDROID_TESTSUITE
     - WEB
-    - TVHTML5EMBEDDED
+    - WEBEMBEDDED
+    - ANDROID_TESTSUITE
 
 logging:
   file:
