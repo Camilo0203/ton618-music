@@ -1,0 +1,90 @@
+{
+  "name": "@ton618/shared",
+  "version": "1.0.0",
+  "description": "Código compartido entre los servicios de TON618 — bot, web dashboard y música",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/types/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/types/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
+    },
+    "./premium": {
+      "import": {
+        "types": "./dist/types/premium/resolver.d.ts",
+        "default": "./dist/esm/premium/resolver.js"
+      },
+      "require": {
+        "types": "./dist/types/premium/resolver.d.ts",
+        "default": "./dist/cjs/premium/resolver.js"
+      }
+    },
+    "./constants": {
+      "import": {
+        "types": "./dist/types/constants/index.d.ts",
+        "default": "./dist/esm/constants/index.js"
+      },
+      "require": {
+        "types": "./dist/types/constants/index.d.ts",
+        "default": "./dist/cjs/constants/index.js"
+      }
+    },
+    "./logger": {
+      "import": {
+        "types": "./dist/types/logger/structured.d.ts",
+        "default": "./dist/esm/logger/structured.js"
+      },
+      "require": {
+        "types": "./dist/types/logger/structured.d.ts",
+        "default": "./dist/cjs/logger/structured.js"
+      }
+    },
+    "./types": {
+      "types": "./dist/types/types/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "npm run build:clean && npm run build:esm && npm run build:cjs && npm run build:types",
+    "build:clean": "node -e \"require('fs').rmSync('./dist',{recursive:true,force:true})\"",
+    "build:esm": "tsc -p tsconfig.json",
+    "build:cjs": "tsc -p tsconfig.cjs.json && node -e \"require('fs').writeFileSync('./dist/cjs/package.json','{\\\"type\\\":\\\"commonjs\\\"}')\"",
+    "build:types": "tsc -p tsconfig.types.json",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "ton618",
+    "discord",
+    "bot",
+    "shared"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "@types/mongodb": "^4.0.6",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.3"
+  },
+  "peerDependencies": {
+    "mongodb": "^7.1.0"
+  },
+  "peerDependenciesMeta": {
+    "mongodb": {
+      "optional": true
+    }
+  }
+}

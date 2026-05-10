@@ -11,7 +11,7 @@
     "test": "node --test tests/"
   },
   "dependencies": {
-    "@ton618/shared": "file:../ton618-shared",
+    "@ton618/shared": "file:./ton618-shared",
     "discord.js": "^14.25.1",
     "shoukaku": "^4.3.0",
     "kazagumo": "^3.4.3",
