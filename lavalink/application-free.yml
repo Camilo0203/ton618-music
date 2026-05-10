@@ -36,7 +36,7 @@ lavalink:
     trackStuckThresholdMs: 10000
     useSeekGhosting: false
     youtubeSearchEnabled: true
-    soundcloudSearchEnabled: false
+    soundcloudSearchEnabled: true
 
 metrics:
   prometheus:
