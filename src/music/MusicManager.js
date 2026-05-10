@@ -50,7 +50,7 @@ class MusicManager {
 
     this.kazagumo = new Kazagumo(
       {
-        defaultSearchEngine: "ytsearch",
+        defaultSearchEngine: "scsearch",
         send: (guildId, payload) => {
           const guild = this.client.guilds.cache.get(guildId);
           if (guild) guild.shard.send(payload);
@@ -150,7 +150,7 @@ class MusicManager {
    * @returns {Promise<KazagumoSearchResult>}
    */
   async search(query, tier = "free") {
-    const engine = tier === "pro" ? "ytsearch" : "ytsearch";
+    const engine = tier === "pro" ? "scsearch" : "scsearch";
     return this.kazagumo.search(query, { engine });
   }
 
