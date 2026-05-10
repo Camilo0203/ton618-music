@@ -7,6 +7,6 @@
  * require() sites (commands, MusicManager, etc.) keep working.
  */
 
-const { resolveGuildTier } = require("@ton618/shared");
+const { resolveGuildTier } = require("../shared");
 
 module.exports = { resolveGuildTier };

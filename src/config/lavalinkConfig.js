@@ -10,7 +10,7 @@
  * y diferenciar la calidad vía los filtros de audio aplicados en MusicPlayer.
  */
 
-const { getTierLimitsFromEnv } = require("@ton618/shared");
+const { getTierLimitsFromEnv } = require("../shared");
 
 function requireEnv(key) {
   const val = process.env[key];
