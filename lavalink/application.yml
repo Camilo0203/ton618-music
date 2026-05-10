@@ -69,9 +69,7 @@ plugins:
     allowDirectVideoIds: true
     allowDirectPlaylistIds: true
     clients:
-      - TVHTML5_SIMPLY
-      - WEB
-      - MUSIC
+      - ANDROID_TESTSUITE
     oauth:
       enabled: true
       clientId: "${YOUTUBE_OAUTH_CLIENT_ID}"
