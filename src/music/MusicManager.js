@@ -145,12 +145,20 @@ class MusicManager {
 
   /**
    * Busca pistas respetando las restricciones del tier.
+   * Filtra resultados que superen la duración máxima del tier.
    * @param {string} query    URL o término de búsqueda
    * @param {string} tier     "pro" | "free"
    * @returns {Promise<KazagumoSearchResult>}
    */
   async search(query, tier = "free") {
-    return this.kazagumo.search(query, { engine: "ytsearch" });
+    const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
+    const results = await this.kazagumo.search(query, { engine: "ytsearch" });
+    if (results?.tracks && limits.maxDurationSeconds) {
+      results.tracks = results.tracks.filter(
+        (t) => !t.length || t.length / 1000 <= limits.maxDurationSeconds
+      );
+    }
+    return results;
   }
 
   /**
@@ -248,6 +256,7 @@ class MusicManager {
 
   _resetIdleTimer(guildId) {
     this._clearIdleTimer(guildId);
+    this._startIdleTimer(guildId);
   }
 
   _clearIdleTimer(guildId) {

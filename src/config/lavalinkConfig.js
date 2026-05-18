@@ -19,10 +19,18 @@ function requireEnv(key) {
 }
 
 function getNode(prefix) {
+  const password = process.env[`LAVALINK_${prefix}_PASSWORD`];
+  if (!password) {
+    throw new Error(
+      `LAVALINK_${prefix}_PASSWORD is required. ` +
+      `Never use the default Lavalink password in production. ` +
+      `Generate a strong password and set it in your .env file.`
+    );
+  }
   return {
     name: prefix.toLowerCase(),
     url: `${process.env[`LAVALINK_${prefix}_HOST`] || "localhost"}:${process.env[`LAVALINK_${prefix}_PORT`] || 2333}`,
-    auth: process.env[`LAVALINK_${prefix}_PASSWORD`] || "youshallnotpass",
+    auth: password,
     secure: (process.env[`LAVALINK_${prefix}_SECURE`] || "false") === "true",
   };
 }
