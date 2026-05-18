@@ -150,8 +150,7 @@ class MusicManager {
    * @returns {Promise<KazagumoSearchResult>}
    */
   async search(query, tier = "free") {
-    const engine = tier === "pro" ? "ytsearch" : "ytsearch";
-    return this.kazagumo.search(query, { engine });
+    return this.kazagumo.search(query, { engine: "ytsearch" });
   }
 
   /**
