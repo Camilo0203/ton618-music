@@ -73,10 +73,11 @@ module.exports = {
     }
     const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
 
-    // Bloquear Spotify en FREE
-    const isSpotify =
-      query.includes("open.spotify.com") || query.includes("spotify:");
-    if (isSpotify && !limits.spotifyEnabled) {
+    // Bloquear playlists de Spotify en FREE (tracks individuales permitidos para todos)
+    const isSpotifyPlaylist =
+      (query.includes("open.spotify.com/playlist") || query.includes("open.spotify.com/album")) &&
+      !limits.spotifyEnabled;
+    if (isSpotifyPlaylist) {
       return interaction.editReply({
         embeds: [proOnlyEmbed(t(language, "spotify_pro_only"), UPGRADE_URL, language)],
       });
