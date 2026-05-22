@@ -152,7 +152,7 @@ class MusicManager {
    */
   async search(query, tier = "free") {
     const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
-    const results = await this.kazagumo.search(query, { engine: "ytsearch" });
+    const results = await this.kazagumo.search(query, { engine: "scsearch" });
     if (results?.tracks && limits.maxDurationSeconds) {
       results.tracks = results.tracks.filter(
         (t) => !t.length || t.length / 1000 <= limits.maxDurationSeconds

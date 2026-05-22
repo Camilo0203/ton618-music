@@ -63,7 +63,10 @@ module.exports = {
 
     let tier;
     try {
-      tier = await resolveGuildTier(guildId);
+      tier = await Promise.race([
+        resolveGuildTier(guildId),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("tier_timeout")), 2000)),
+      ]);
     } catch (err) {
       console.error("[play] Error resolving tier:", err?.message || err);
       tier = "free";

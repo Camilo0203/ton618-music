@@ -27,9 +27,12 @@ function getNode(prefix) {
       `Generate a strong password and set it in your .env file.`
     );
   }
+  const rawHost = process.env[`LAVALINK_${prefix}_HOST`] || "localhost";
+  const port = process.env[`LAVALINK_${prefix}_PORT`] || 2333;
+  const host = rawHost.includes(":") ? `[${rawHost}]` : rawHost;
   return {
     name: prefix.toLowerCase(),
-    url: `${process.env[`LAVALINK_${prefix}_HOST`] || "localhost"}:${process.env[`LAVALINK_${prefix}_PORT`] || 2333}`,
+    url: `${host}:${port}`,
     auth: password,
     secure: (process.env[`LAVALINK_${prefix}_SECURE`] || "false") === "true",
   };
