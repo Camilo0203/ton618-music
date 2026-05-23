@@ -50,7 +50,7 @@ class MusicManager {
 
     this.kazagumo = new Kazagumo(
       {
-        defaultSearchEngine: "scsearch",
+        defaultSearchEngine: "soundcloud",
         send: (guildId, payload) => {
           const guild = this.client.guilds.cache.get(guildId);
           if (guild) guild.shard.send(payload);
@@ -152,7 +152,7 @@ class MusicManager {
    */
   async search(query, tier = "free") {
     const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
-    const results = await this.kazagumo.search(query, { engine: "scsearch" });
+    const results = await this.kazagumo.search(query, { engine: "soundcloud" });
     if (results?.tracks && limits.maxDurationSeconds) {
       results.tracks = results.tracks.filter(
         (t) => !t.length || t.length / 1000 <= limits.maxDurationSeconds
