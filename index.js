@@ -1,18 +1,10 @@
 "use strict";
 
 /**
- * TON618 Music Module — Entry Point
+ * TON618 Music Module — Entry Point (Refactor 2025)
  *
- * Este módulo puede correr de dos formas:
- *
- * A) INDEPENDIENTE: como un proceso Node.js separado con su propio cliente Discord.
- *    Útil si quieres separar el proceso de música del bot principal.
- *
- * B) INTEGRADO: importando MusicManager y musicInteractionHandler desde ton618-bot/index.js.
- *    Recomendado para mantener un solo proceso.
- *
- * Por defecto corre en modo INDEPENDIENTE.
- * Ver README.md para instrucciones de integración.
+ * A) INDEPENDIENTE: proceso Node.js separado
+ * B) INTEGRADO: importar MusicManager y musicInteractionHandler desde ton618-bot
  */
 
 require("dotenv").config();
@@ -20,10 +12,15 @@ require("dotenv").config();
 const { Client, GatewayIntentBits, Partials } = require("discord.js");
 const { MusicManager } = require("./src/music/MusicManager");
 const { musicInteractionHandler } = require("./src/handlers/musicInteractionHandler");
+const { VoiceStateMonitor } = require("./src/services/VoiceStateMonitor");
+const { YouTubeTokenService } = require("./src/services/YouTubeTokenService");
+const { createLogger } = require("./src/utils/logger");
+
+const log = createLogger("Main");
 
 const TOKEN = process.env.DISCORD_TOKEN;
 if (!TOKEN) {
-  console.error("❌  DISCORD_TOKEN no está configurado en .env");
+  log.error("DISCORD_TOKEN no está configurado en .env");
   process.exit(1);
 }
 
@@ -36,46 +33,114 @@ const client = new Client({
   partials: [Partials.Channel],
 });
 
-client.once("ready", () => {
-  console.log(`[TON618-Music] Conectado como: ${client.user.tag}`);
-  console.log(`[TON618-Music] Servidores: ${client.guilds.cache.size}`);
+const youtubeTokenService = new YouTubeTokenService();
+let voiceMonitor = null;
 
-  // Instanciar MusicManager después de que el cliente esté listo
+client.once("ready", async () => {
+  log.info("Client ready", { tag: client.user.tag, guilds: client.guilds.cache.size });
+
+  // Iniciar MusicManager
   client.musicManager = new MusicManager(client);
+
+  // Iniciar monitoreo de voice states
+  voiceMonitor = new VoiceStateMonitor(client, client.musicManager);
+  voiceMonitor.start();
+
+  // Iniciar servicio de tokens de YouTube (en background, no bloquea startup)
+  youtubeTokenService.start().catch((err) => {
+    log.warn("YouTubeTokenService failed to start, continuing without tokens", { error: err.message });
+  });
+
+  // Health check heartbeat
+  setInterval(() => {
+    const stats = client.musicManager.getStats();
+    log.debug("Health heartbeat", {
+      players: stats.activePlayers,
+      idleTimers: stats.idleTimers,
+      guildLocks: stats.guildLocks,
+      nodes: stats.nodes.map((n) => ({ name: n.name, state: n.state })),
+    });
+  }, 60000);
+});
+
+// Manejo de errores de conexión de Discord
+client.on("shardError", (error) => {
+  log.error("Discord shard error", { error: error.message });
+});
+
+client.on("error", (error) => {
+  log.error("Discord client error", { error: error.message });
 });
 
 client.on("interactionCreate", musicInteractionHandler);
 
-// Manejo de errores no capturados
-process.on("unhandledRejection", (reason) => {
-  console.error("[TON618-Music] Unhandled rejection:", reason);
+// ---- Global error handling ----
+
+process.on("unhandledRejection", (reason, promise) => {
+  log.error("Unhandled rejection", { reason: reason?.message || String(reason) });
 });
 
 process.on("uncaughtException", (err) => {
-  console.error("[TON618-Music] Uncaught exception:", err);
-  process.exit(1);
+  log.error("Uncaught exception", { error: err.message, stack: err.stack });
+  // Dar tiempo a que los logs se flush antes de salir
+  setTimeout(() => process.exit(1), 500);
 });
 
-// Graceful shutdown
+process.on("warning", (warning) => {
+  log.warn("Node warning", { name: warning.name, message: warning.message });
+});
+
+// ---- Graceful shutdown ----
+let shuttingDown = false;
+
 async function shutdown(signal) {
-  console.log(`[TON618-Music] Señal recibida: ${signal}. Apagando...`);
+  if (shuttingDown) return;
+  shuttingDown = true;
+  log.info("Shutdown initiated", { signal });
+
+  // Detener aceptación de nuevas interacciones
+  client.removeAllListeners("interactionCreate");
+
+  try {
+    if (voiceMonitor) voiceMonitor.stop();
+    youtubeTokenService.stop();
+  } catch (err) {
+    log.warn("Error stopping monitors", { error: err.message });
+  }
 
   try {
     if (client.musicManager) {
       const playerIds = [...client.musicManager.kazagumo.players.keys()];
-      await Promise.all(playerIds.map((id) => client.musicManager.destroyPlayer(id)));
+      log.info("Destroying players before shutdown", { count: playerIds.length });
+      await Promise.allSettled(playerIds.map((id) => client.musicManager.destroyPlayer(id)));
     }
-  } catch {}
+  } catch (err) {
+    log.error("Error destroying players", { error: err.message });
+  }
 
-  client.destroy();
-  process.exit(0);
+  try {
+    client.destroy();
+    log.info("Client destroyed");
+  } catch (err) {
+    log.error("Error destroying client", { error: err.message });
+  }
+
+  // Flush logs de Winston
+  setTimeout(() => process.exit(0), 500);
 }
 
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("SIGINT", () => shutdown("SIGINT"));
 
+// Windows no soporta SIGTERM de forma nativa en Node
+if (process.platform === "win32") {
+  process.on("message", (msg) => {
+    if (msg === "shutdown") shutdown("MSG_SHUTDOWN");
+  });
+}
+
 client.login(TOKEN).catch((err) => {
-  console.error("[TON618-Music] Error al hacer login:", err?.message || err);
+  log.error("Login failed", { error: err?.message || String(err) });
   process.exit(1);
 });
 

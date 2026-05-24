@@ -4,6 +4,9 @@ const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const { resolveGuildTier } = require("../utils/premiumResolver");
 const { nowPlayingEmbed, errorEmbed, formatDuration } = require("../utils/musicEmbeds");
 const { t, normalizeLanguage } = require("../utils/i18n");
+const { createLogger } = require("../utils/logger");
+
+const log = createLogger("NowPlayingCommand");
 
 const data = new SlashCommandBuilder()
   .setName("nowplaying")
@@ -18,6 +21,10 @@ module.exports = {
 
     const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
     const musicManager = interaction.client.musicManager;
+    if (!musicManager) {
+      log.error("musicManager not available", { guildId: interaction.guildId });
+      return interaction.editReply({ embeds: [errorEmbed(t(language, "error_lavalink"), language)] });
+    }
     const player = musicManager.kazagumo.players.get(interaction.guildId);
 
     if (!player || (!player.playing && !player.paused)) {

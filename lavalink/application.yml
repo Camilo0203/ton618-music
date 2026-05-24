@@ -1,5 +1,5 @@
 server:
-  port: 2333
+  port: ${LAVALINK_PRO_PORT:2333}
   address: 0.0.0.0
 
 spring:
@@ -8,12 +8,13 @@ spring:
 
 lavalink:
   plugins:
-    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.2.0"
+    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.8.0"
       repository: "https://maven.topi.wtf/releases"
-    - dependency: "dev.lavalink.youtube:youtube-plugin:1.18.1"
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.14.0"
+      repository: "https://maven.lavalink.dev/releases"
       snapshot: false
   server:
-    password: "CaMilo2030."
+    password: ${LAVALINK_PRO_PASSWORD}
     sources:
       youtube: false
       bandcamp: true
@@ -33,17 +34,44 @@ lavalink:
       rotation: true
       channelMix: true
       lowPass: true
-    bufferDurationMs: 400
-    frameBufferDurationMs: 5000
+    bufferDurationMs: 800
+    frameBufferDurationMs: 10000
     youtubePlaylistLoadLimit: 6
     opusEncodingQuality: 10
     resamplingQuality: HIGH
-    trackStuckThresholdMs: 10000
+    trackStuckThresholdMs: 15000
     useSeekGhosting: true
     youtubeSearchEnabled: true
     soundcloudSearchEnabled: true
 
 plugins:
+  youtube:
+    enabled: true
+    allowSearch: true
+    allowDirectVideoIds: true
+    allowDirectPlaylistIds: true
+    # Rotación inteligente de clients
+    clients:
+      - WEB_REMIX
+      - ANDROID
+      - WEB
+      - TVHTML5
+    WEB:
+      poToken: ${YOUTUBE_PO_TOKEN:}
+      visitorData: ${YOUTUBE_VISITOR_DATA:}
+    WEB_REMIX:
+      poToken: ${YOUTUBE_PO_TOKEN:}
+      visitorData: ${YOUTUBE_VISITOR_DATA:}
+    ANDROID:
+      # Android generalmente no requiere poToken
+      visitorData: ${YOUTUBE_VISITOR_DATA:}
+    TVHTML5:
+      visitorData: ${YOUTUBE_VISITOR_DATA:}
+    # Cookies de fallback (exportar desde navegador como netscape o json)
+    oauth2:
+      # No usar OAuth2 a menos que sea necesario, puede causar bloqueos de cuenta
+      enabled: false
+
   lavasrc:
     providers:
       - "ytsearch:\"%ISRC%\""
@@ -55,15 +83,15 @@ plugins:
       deezer: false
       yandexmusic: false
     spotify:
-      clientId: ""
-      clientSecret: ""
+      clientId: ${SPOTIFY_CLIENT_ID:}
+      clientSecret: ${SPOTIFY_CLIENT_SECRET:}
       countryCode: "US"
       playlistLoadLimit: 6
       albumLoadLimit: 6
 
 metrics:
   prometheus:
-    enabled: false
+    enabled: true
     endpoint: /metrics
 
 sentry:

@@ -15,7 +15,12 @@
     "shoukaku": "^4.3.0",
     "kazagumo": "^3.4.3",
     "dotenv": "^16.6.1",
-    "mongodb": "^7.1.0"
+    "mongodb": "^7.1.0",
+    "youtubei.js": "^13.3.0",
+    "playwright": "^1.52.0",
+    "undici": "^7.8.0",
+    "winston": "^3.17.0",
+    "ws": "^8.18.2"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

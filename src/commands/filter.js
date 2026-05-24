@@ -9,7 +9,9 @@ const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const { resolveGuildTier } = require("../utils/premiumResolver");
 const { errorEmbed, proOnlyEmbed } = require("../utils/musicEmbeds");
 const { t, normalizeLanguage } = require("../utils/i18n");
+const { createLogger } = require("../utils/logger");
 
+const log = createLogger("FilterCommand");
 const UPGRADE_URL = process.env.PRO_UPGRADE_URL || "https://ton618.app/pricing";
 
 const data = new SlashCommandBuilder()
@@ -57,6 +59,10 @@ module.exports = {
     }
 
     const musicManager = interaction.client.musicManager;
+    if (!musicManager) {
+      log.error("musicManager not available", { guildId: interaction.guildId });
+      return interaction.editReply({ embeds: [errorEmbed(t(language, "error_lavalink"), language)] });
+    }
     const player = musicManager.kazagumo.players.get(interaction.guildId);
 
     if (!player || !player.playing) {

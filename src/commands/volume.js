@@ -5,6 +5,9 @@ const { resolveGuildTier } = require("../utils/premiumResolver");
 const { TIER_LIMITS } = require("../config/lavalinkConfig");
 const { errorEmbed, warningEmbed } = require("../utils/musicEmbeds");
 const { t, normalizeLanguage } = require("../utils/i18n");
+const { createLogger } = require("../utils/logger");
+
+const log = createLogger("VolumeCommand");
 
 const data = new SlashCommandBuilder()
   .setName("volume")
@@ -32,6 +35,10 @@ module.exports = {
     }
 
     const musicManager = interaction.client.musicManager;
+    if (!musicManager) {
+      log.error("musicManager not available", { guildId: interaction.guildId });
+      return interaction.editReply({ embeds: [errorEmbed(t(language, "error_lavalink"), language)] });
+    }
     const player = musicManager.kazagumo.players.get(interaction.guildId);
 
     if (!player) {

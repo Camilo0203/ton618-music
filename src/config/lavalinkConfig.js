@@ -20,7 +20,7 @@ function requireEnv(key) {
 
 function getNode(prefix) {
   const password = process.env[`LAVALINK_${prefix}_PASSWORD`];
-  if (!password) {
+  if (!password && process.env.NODE_ENV !== "test") {
     throw new Error(
       `LAVALINK_${prefix}_PASSWORD is required. ` +
       `Never use the default Lavalink password in production. ` +
@@ -33,7 +33,7 @@ function getNode(prefix) {
   return {
     name: prefix.toLowerCase(),
     url: `${host}:${port}`,
-    auth: password,
+    auth: password || "test-password",
     secure: (process.env[`LAVALINK_${prefix}_SECURE`] || "false") === "true",
   };
 }
@@ -46,4 +46,17 @@ const LAVALINK_NODES = {
 /** Límites centralizados en @ton618/shared, sobreescribibles vía env vars */
 const TIER_LIMITS = getTierLimitsFromEnv();
 
-module.exports = { LAVALINK_NODES, TIER_LIMITS };
+/** Configuración de circuit breaker para nodos Lavalink */
+const CIRCUIT_BREAKER = {
+  threshold: parseInt(process.env.CIRCUIT_BREAKER_THRESHOLD || "5", 10),
+  resetMs: parseInt(process.env.CIRCUIT_BREAKER_RESET_MS || "60000", 10),
+};
+
+/** Timeouts y límites de reintentos */
+const TIMEOUTS = {
+  playerIdle: parseInt(process.env.PLAYER_IDLE_TIMEOUT_MS || "180000", 10),
+  trackMaxRetries: parseInt(process.env.TRACK_MAX_RETRIES || "3", 10),
+  tierResolve: parseInt(process.env.TIER_RESOLVE_TIMEOUT_MS || "3000", 10),
+};
+
+module.exports = { LAVALINK_NODES, TIER_LIMITS, CIRCUIT_BREAKER, TIMEOUTS };

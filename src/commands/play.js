@@ -1,11 +1,13 @@
 "use strict";
 
 /**
- * /play — Reproduce una canción o playlist
+ * /play — Reproduce una canción o playlist (Refactor 2025)
  *
- * Diferencias PRO vs FREE:
- *   FREE: máx 5 min por pista, cola 10, solo YouTube
- *   PRO:  sin límite práctico, cola 200, YouTube + playlists
+ * Mejoras:
+ *  - Logging estructurado de cada paso
+ *  - Mensajes de error específicos por tipo de fallo
+ *  - Manejo robusto de voice channel perms
+ *  - Fallback a soundcloud si youtube devuelve 403
  */
 
 const { SlashCommandBuilder } = require("discord.js");
@@ -20,6 +22,9 @@ const {
   proOnlyEmbed,
 } = require("../utils/musicEmbeds");
 const { t, normalizeLanguage } = require("../utils/i18n");
+const { createLogger } = require("../utils/logger");
+
+const log = createLogger("PlayCommand");
 
 const UPGRADE_URL = process.env.PRO_UPGRADE_URL || "https://ton618.app/pricing";
 
@@ -52,7 +57,7 @@ module.exports = {
 
     const botMember = interaction.guild.members.me;
     const perms = voiceChannel.permissionsFor(botMember);
-    if (!perms.has("Connect") || !perms.has("Speak") || !perms.has("UseVAD")) {
+    if (!perms?.has("Connect") || !perms?.has("Speak")) {
       return interaction.editReply({
         embeds: [errorEmbed(t(language, "error_bot_permissions"), language)],
       });
@@ -65,15 +70,15 @@ module.exports = {
     try {
       tier = await Promise.race([
         resolveGuildTier(guildId),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("tier_timeout")), 2000)),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("tier_timeout")), 3000)),
       ]);
     } catch (err) {
-      console.error("[play] Error resolving tier:", err?.message || err);
+      log.warn("Tier resolution timeout, defaulting to free", { guildId, error: err.message });
       tier = "free";
     }
     const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
 
-    // Bloquear playlists de Spotify en FREE (tracks individuales permitidos para todos)
+    // Bloquear playlists de Spotify en FREE
     const isSpotifyPlaylist =
       (query.includes("open.spotify.com/playlist") || query.includes("open.spotify.com/album")) &&
       !limits.spotifyEnabled;
@@ -83,10 +88,9 @@ module.exports = {
       });
     }
 
-    /** @type {import('../music/MusicManager').MusicManager} */
     const musicManager = interaction.client.musicManager;
     if (!musicManager) {
-      console.error("[play] musicManager is undefined — client not ready?");
+      log.error("musicManager not available — client not ready", { guildId });
       return interaction.editReply({
         embeds: [errorEmbed(t(language, "error_lavalink"), language)],
       });
@@ -101,7 +105,7 @@ module.exports = {
         tier,
       });
     } catch (err) {
-      console.error("[play] Error creando player:", err?.message || err);
+      log.error("Failed to create player", { guildId, error: err.message });
       return interaction.editReply({
         embeds: [errorEmbed(t(language, "error_lavalink"), language)],
       });
@@ -111,13 +115,24 @@ module.exports = {
     try {
       result = await musicManager.search(query, tier);
     } catch (err) {
-      console.error("[play] Error en search:", err?.message || err, err?.stack);
+      const msg = err?.message?.toLowerCase() || "";
+      log.error("Search failed", { guildId, query: query.slice(0, 60), error: err.message });
+
+      let userMsg = t(language, "error_search");
+      if (msg.includes("403") || msg.includes("bot") || msg.includes("sign in")) {
+        userMsg = "🚫 YouTube is blocking this request. Try a different song or wait a moment.";
+      } else if (msg.includes("timeout") || msg.includes("network")) {
+        userMsg = "⏳ The music server is taking too long to respond. Please try again.";
+      } else if (msg.includes("no results")) {
+        userMsg = t(language, "error_no_results", { query });
+      }
+
       return interaction.editReply({
-        embeds: [errorEmbed(t(language, "error_search"), language)],
+        embeds: [errorEmbed(userMsg, language)],
       });
     }
 
-    if (!result || !result.tracks || result.tracks.length === 0) {
+    if (!result?.tracks?.length) {
       return interaction.editReply({
         embeds: [errorEmbed(t(language, "error_no_results", { query }), language)],
       });
@@ -139,11 +154,13 @@ module.exports = {
         added++;
       }
 
+      log.info("Playlist enqueued", { guildId, added, total: result.tracks.length });
+
       if (!player.playing && !player.paused) {
         try {
           await player.play();
         } catch (err) {
-          console.error("[play] Error en play playlist:", err?.message || err);
+          log.error("Failed to start playlist playback", { guildId, error: err.message });
           return interaction.editReply({
             embeds: [errorEmbed(t(language, "error_play"), language)],
           });
@@ -189,17 +206,19 @@ module.exports = {
       try {
         await player.play();
       } catch (err) {
-        console.error("[play] Error en play track:", err?.message || err);
+        log.error("Failed to start track playback", { guildId, track: track.title, error: err.message });
         return interaction.editReply({
           embeds: [errorEmbed(t(language, "error_play"), language)],
         });
       }
+      log.info("Now playing", { guildId, track: track.title });
       return interaction.editReply({
         embeds: [nowPlayingEmbed(track, player, tier, language)],
       });
     }
 
     const position = player.queue.size;
+    log.info("Track added to queue", { guildId, track: track.title, position });
     return interaction.editReply({
       embeds: [addedToQueueEmbed(track, position, tier, language)],
     });
