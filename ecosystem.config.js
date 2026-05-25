@@ -1,4 +1,19 @@
 const path = require('path');
+const fs = require('fs');
+
+const envVars = {};
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+  for (const line of lines) {
+    const idx = line.indexOf('=');
+    if (idx > 0) {
+      const key = line.slice(0, idx).trim();
+      const val = line.slice(idx + 1).trim();
+      if (key && !key.startsWith('#')) envVars[key] = val;
+    }
+  }
+}
 
 module.exports = {
   apps: [
