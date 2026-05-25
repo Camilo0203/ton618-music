@@ -90,6 +90,18 @@ class MusicManager {
 
     this.trackErrorHandler = new TrackErrorHandler(this, this.health);
     this._registerEvents();
+
+    // Verificar estado de nodos después de 5s (el evento ready puede perderse si conecta antes de registrar listener)
+    setTimeout(() => {
+      const shoukaku = this.kazagumo.shoukaku;
+      for (const [name, node] of shoukaku.nodes) {
+        const connected = node.state === 0 || node.connected === true;
+        log.info("Node state check", { name, state: node.state, connected });
+        if (connected) {
+          this.health.recordSuccess(name);
+        }
+      }
+    }, 5000);
   }
 
   _registerEvents() {
