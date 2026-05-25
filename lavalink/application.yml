@@ -1,5 +1,5 @@
 server:
-  port: ${LAVALINK_PRO_PORT:2333}
+  port: 2333
   address: 0.0.0.0
 
 spring:
@@ -14,7 +14,7 @@ lavalink:
       repository: "https://maven.lavalink.dev/releases"
       snapshot: false
   server:
-    password: ${LAVALINK_PRO_PASSWORD}
+    password: CaMilo2030.pro
     sources:
       youtube: false
       bandcamp: true

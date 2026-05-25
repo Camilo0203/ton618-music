@@ -72,7 +72,7 @@ if (tokens.YOUTUBE_VISITOR_DATA) {
   console.log("[lavalink-wrapper] visitorData injected");
 }
 
-const child = spawn("java", ["-Dconfig.file=" + configPath, "-jar", LAVA_JAR], {
+const child = spawn("java", ["-Dspring.config.location=file:" + configPath, "-jar", LAVA_JAR], {
   stdio: "inherit",
   env,
   cwd: ROOT,
