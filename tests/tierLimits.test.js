@@ -1,5 +1,7 @@
 "use strict";
 
+process.env.NODE_ENV = "test";
+
 const { describe, it } = require("node:test");
 const assert = require("node:assert");
 

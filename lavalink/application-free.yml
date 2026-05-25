@@ -71,6 +71,10 @@ metrics:
     enabled: false
 
 logging:
+  file:
+    max-history: 7
+    max-size: 500MB
+  path: ./logs-free/
   level:
     root: WARN
     lavalink: INFO

@@ -139,13 +139,13 @@ module.exports = {
     }
 
     // Playlists solo en PRO
-    if (result.type === "PLAYLIST" && !limits.playlistEnabled) {
+    if (result.type?.toLowerCase?.() === "playlist" && !limits.playlistEnabled) {
       return interaction.editReply({
         embeds: [proOnlyEmbed(t(language, "playlist_pro_only"), UPGRADE_URL, language)],
       });
     }
 
-    if (result.type === "PLAYLIST") {
+    if (result.type?.toLowerCase?.() === "playlist") {
       let added = 0;
       for (const track of result.tracks) {
         track.requester = interaction.user;

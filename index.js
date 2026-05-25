@@ -36,7 +36,7 @@ const client = new Client({
 const youtubeTokenService = new YouTubeTokenService();
 let voiceMonitor = null;
 
-client.once("ready", async () => {
+client.once("clientReady", async () => {
   log.info("Client ready", { tag: client.user.tag, guilds: client.guilds.cache.size });
 
   // Iniciar MusicManager

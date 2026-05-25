@@ -96,6 +96,19 @@ class YouTubeTokenService {
     } catch (err) {
       log.warn("Failed to save tokens", { error: err.message });
     }
+
+    // Exportar también como .env.lavalink para que el wrapper lo inyecte
+    try {
+      const envLines = [
+        `YOUTUBE_PO_TOKEN=${this.tokens.poToken || ""}`,
+        `YOUTUBE_VISITOR_DATA=${this.tokens.visitorData || ""}`,
+      ];
+      const envFile = path.join(process.cwd(), ".env.lavalink");
+      await fs.promises.writeFile(envFile, envLines.join("\n") + "\n");
+      log.debug("Exported tokens to .env.lavalink");
+    } catch (err) {
+      log.warn("Failed to export .env.lavalink", { error: err.message });
+    }
   }
 
   async refreshTokens() {

@@ -23,10 +23,12 @@ class VoiceStateMonitor {
     this.musicManager = musicManager;
     this.aloneTimers = new Map();
     this.zombieInterval = null;
+    this._voiceHandler = null;
   }
 
   start() {
-    this.client.on("voiceStateUpdate", (oldState, newState) => this._handleVoiceStateUpdate(oldState, newState));
+    this._voiceHandler = (oldState, newState) => this._handleVoiceStateUpdate(oldState, newState);
+    this.client.on("voiceStateUpdate", this._voiceHandler);
 
     // Chequeo periódico de sesiones zombie
     this.zombieInterval = setInterval(() => this._checkZombieSessions(), ZOMBIE_CHECK_MS);
@@ -35,7 +37,10 @@ class VoiceStateMonitor {
   }
 
   stop() {
-    this.client.removeAllListeners("voiceStateUpdate");
+    if (this._voiceHandler) {
+      this.client.removeListener("voiceStateUpdate", this._voiceHandler);
+      this._voiceHandler = null;
+    }
     if (this.zombieInterval) {
       clearInterval(this.zombieInterval);
       this.zombieInterval = null;

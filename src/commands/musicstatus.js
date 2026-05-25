@@ -78,7 +78,7 @@ module.exports = {
       const s = node.stats;
       const health = node.health || {};
       embed.addFields({
-        name: `${node.name} ${health.open ? "🔴 CB OPEN" : health.errors > 0 ? "🟡 DEGRADED" : "🟢 OK"}`,
+        name: `${node.name} ${health.circuitState === "OPEN" ? "🔴 CB OPEN" : health.consecutiveFailures > 0 ? "🟡 DEGRADED" : "🟢 OK"}`,
         value: [
           `${t(language, "musicstatus_state")}: ${NODE_STATE_LABEL[node.state] ?? node.state}`,
           s
@@ -89,8 +89,8 @@ module.exports = {
                 `Uptime: ${s.uptime ? Math.floor(s.uptime / 60000) + " min" : "N/A"}`,
               ].join("\n")
             : "N/A",
-          health.errors ? `Errors (1h): ${health.errors}` : "",
-          health.lastError ? `Last error: ${new Date(health.lastError).toISOString()}` : "",
+          health.consecutiveFailures ? `Consecutive failures: ${health.consecutiveFailures}` : "",
+          health.lastFailureAt ? `Last failure: ${new Date(health.lastFailureAt).toISOString()}` : "",
         ].filter(Boolean).join("\n"),
         inline: false,
       });
