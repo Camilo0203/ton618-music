@@ -12,7 +12,8 @@ module.exports = {
       max_memory_restart: '2G',
       env: {
         SERVER_PORT: 2333,
-        NODE_ENV: 'production'
+        NODE_ENV: 'production',
+        ...envVars
       },
       error_file: './lavalink/logs/pro-err.log',
       out_file: './lavalink/logs/pro-out.log',
@@ -30,7 +31,8 @@ module.exports = {
       max_memory_restart: '1G',
       env: {
         SERVER_PORT: 2334,
-        NODE_ENV: 'production'
+        NODE_ENV: 'production',
+        ...envVars
       },
       error_file: './lavalink/logs/free-err.log',
       out_file: './lavalink/logs/free-out.log',
