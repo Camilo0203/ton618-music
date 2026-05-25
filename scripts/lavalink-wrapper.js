@@ -18,6 +18,7 @@ const { spawn } = require("child_process");
 const ROOT = path.join(__dirname, "..");
 const TOKEN_FILE = path.join(ROOT, ".youtube-tokens.json");
 const ENV_LAVA = path.join(ROOT, ".env.lavalink");
+const ENV_MAIN = path.join(ROOT, ".env");
 const LAVA_JAR = path.join(ROOT, "lavalink", "Lavalink.jar");
 
 function loadEnvFile(filePath) {
@@ -60,7 +61,7 @@ if (!configPath) {
   process.exit(1);
 }
 
-const tokens = { ...loadTokens(), ...loadEnvFile(ENV_LAVA) };
+const tokens = { ...loadTokens(), ...loadEnvFile(ENV_MAIN), ...loadEnvFile(ENV_LAVA) };
 const env = { ...process.env, ...tokens };
 
 console.log(`[lavalink-wrapper] Starting Lavalink with config: ${configPath}`);
