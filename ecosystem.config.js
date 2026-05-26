@@ -63,7 +63,8 @@ module.exports = {
       watch: false,
       max_memory_restart: '512M',
       env: {
-        NODE_ENV: 'production'
+        NODE_ENV: 'production',
+        ...envVars
       },
       error_file: './logs/err.log',
       out_file: './logs/out.log',
