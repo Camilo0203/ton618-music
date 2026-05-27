@@ -8,13 +8,13 @@ spring:
 
 lavalink:
   plugins:
-    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.8.0"
+    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.8.3"
       repository: "https://maven.topi.wtf/releases"
-    - dependency: "dev.lavalink.youtube:youtube-plugin:1.14.0"
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.18.1"
       repository: "https://maven.lavalink.dev/releases"
       snapshot: false
   server:
-    password: CaMilo2030.pro
+    password: "CaMilo2030.pro"
     sources:
       youtube: false
       bandcamp: true
@@ -52,20 +52,12 @@ plugins:
     allowDirectPlaylistIds: true
     # Rotación inteligente de clients
     clients:
-      - WEB_REMIX
-      - ANDROID
+      - MUSIC
+      - ANDROID_VR
       - WEB
-      - TVHTML5
+      - WEBEMBEDDED
     WEB:
       poToken: ${YOUTUBE_PO_TOKEN:}
-      visitorData: ${YOUTUBE_VISITOR_DATA:}
-    WEB_REMIX:
-      poToken: ${YOUTUBE_PO_TOKEN:}
-      visitorData: ${YOUTUBE_VISITOR_DATA:}
-    ANDROID:
-      # Android generalmente no requiere poToken
-      visitorData: ${YOUTUBE_VISITOR_DATA:}
-    TVHTML5:
       visitorData: ${YOUTUBE_VISITOR_DATA:}
     # Cookies de fallback (exportar desde navegador como netscape o json)
     oauth2:

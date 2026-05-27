@@ -28,7 +28,7 @@ function getNode(prefix) {
     );
   }
   const rawHost = process.env[`LAVALINK_${prefix}_HOST`] || "localhost";
-  const defaultPort = prefix === "FREE" ? 2334 : 2333;
+  const defaultPort = 2333;
   const port = process.env[`LAVALINK_${prefix}_PORT`] || defaultPort;
   const host = rawHost.includes(":") ? `[${rawHost}]` : rawHost;
   return {

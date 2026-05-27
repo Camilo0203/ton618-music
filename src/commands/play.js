@@ -43,7 +43,9 @@ module.exports = {
   category: "music",
 
   async execute(interaction) {
-    await interaction.deferReply();
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferReply();
+    }
 
     const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
     const member = interaction.guild?.members?.cache?.get(interaction.user.id);
@@ -102,10 +104,11 @@ module.exports = {
         guildId,
         voiceChannelId: voiceChannel.id,
         textChannelId: interaction.channelId,
+        shardId: interaction.guild.shardId,
         tier,
       });
     } catch (err) {
-      log.error("Failed to create player", { guildId, error: err.message });
+      log.error("Failed to create player", { guildId, error: err.message, stack: err.stack });
       return interaction.editReply({
         embeds: [errorEmbed(t(language, "error_lavalink"), language)],
       });

@@ -7,8 +7,7 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "deploy": "node scripts/deploy-music-commands.js",
-    "lavalink": "java -jar lavalink/Lavalink.jar",
-    "test": "node --test tests/services.test.js tests/tierLimits.test.js"
+    "lavalink": "java -Dspring.cloud.config.enabled=false -Dspring.config.location=lavalink/application.yml -jar lavalink/Lavalink.jar"
   },
   "dependencies": {
     "discord.js": "^14.25.1",

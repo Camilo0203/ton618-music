@@ -25,6 +25,7 @@ const IDLE_TIMEOUT_MS = TIMEOUTS.playerIdle;
 const MAX_RETRIES_SEARCH = 2;
 const SEARCH_BACKOFF_MS = 1500;
 const GUILD_LOCK_TIMEOUT_MS = 10000;
+const NODE_READY_TIMEOUT_MS = 10000;
 
 class MusicManager {
   constructor(client) {
@@ -91,11 +92,18 @@ class MusicManager {
     this.trackErrorHandler = new TrackErrorHandler(this, this.health);
     this._registerEvents();
 
+    if (this.client.isReady?.() && this.kazagumo.shoukaku.nodes.size === 0) {
+      this.kazagumo.shoukaku.id = this.client.user?.id || null;
+      for (const node of nodes) {
+        this.kazagumo.shoukaku.addNode(node);
+      }
+    }
+
     // Verificar estado de nodos después de 5s (el evento ready puede perderse si conecta antes de registrar listener)
     setTimeout(() => {
       const shoukaku = this.kazagumo.shoukaku;
       for (const [name, node] of shoukaku.nodes) {
-        const connected = node.state === 0 || node.connected === true;
+        const connected = node.state === 1 || node.connected === true;
         log.info("Node state check", { name, state: node.state, connected });
         if (connected) {
           this.health.recordSuccess(name);
@@ -113,7 +121,11 @@ class MusicManager {
     });
 
     shoukaku.on("error", (name, error) => {
-      log.error("Lavalink node error", { name, error: error?.message || String(error) });
+      log.error("Lavalink node error", {
+        name,
+        error: error?.message || String(error),
+        stack: error?.stack,
+      });
       this.trackErrorHandler.handleNodeError(name, error);
     });
 
@@ -163,6 +175,34 @@ class MusicManager {
     });
   }
 
+  _getConnectedNodeName(preferredName) {
+    const nodes = [...this.kazagumo.shoukaku.nodes.values()];
+    const connectedNodes = nodes.filter((node) => node.state === 1 || node.connected === true);
+    const preferredNode = connectedNodes.find((node) => node.name === preferredName);
+    return (preferredNode || connectedNodes[0])?.name || null;
+  }
+
+  async _waitForConnectedNode(preferredName, timeoutMs = NODE_READY_TIMEOUT_MS) {
+    const start = Date.now();
+    let nodeName = this._getConnectedNodeName(preferredName);
+
+    while (!nodeName && Date.now() - start < timeoutMs) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      nodeName = this._getConnectedNodeName(preferredName);
+    }
+
+    if (!nodeName) {
+      const nodes = [...this.kazagumo.shoukaku.nodes.values()].map((node) => ({
+        name: node.name,
+        state: node.state,
+      }));
+      log.error("No connected Lavalink nodes available", { preferredName, nodes });
+      throw new Error("No connected Lavalink nodes available");
+    }
+
+    return nodeName;
+  }
+
   /**
    * Adquiere un lock por guild para evitar race conditions.
    */
@@ -190,7 +230,7 @@ class MusicManager {
   /**
    * Obtiene o crea un player para un guild, con lock.
    */
-  async getOrCreatePlayer({ guildId, voiceChannelId, textChannelId, tier = "free" }) {
+  async getOrCreatePlayer({ guildId, voiceChannelId, textChannelId, shardId = 0, tier = "free" }) {
     const release = await this._acquireGuildLock(guildId);
     try {
       const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
@@ -198,15 +238,17 @@ class MusicManager {
 
       if (!player) {
         const nodeName = this._nodeForTier[tier] || "free";
-        const bestNode = this.health.getBestNode(nodeName);
+        const bestNode = await this._waitForConnectedNode(nodeName);
 
         player = await this.kazagumo.createPlayer({
           guildId,
           voiceId: voiceChannelId,
           textId: textChannelId,
           deaf: true,
+          shardId,
           volume: Math.min(80, limits.maxVolume),
           nodeName: bestNode,
+          loadBalancer: false,
         });
 
         player.tier = tier;
@@ -243,10 +285,10 @@ class MusicManager {
       for (const engine of engines) {
         try {
           const nodeName = this._nodeForTier[tier] || "free";
-          const bestNode = this.health.getBestNode(nodeName);
+          const bestNode = await this._waitForConnectedNode(nodeName);
 
           log.debug("Searching", { engine, query: query.slice(0, 60), node: bestNode, attempt });
-          const results = await this.kazagumo.search(query, { engine, nodeName: bestNode });
+          const results = await this.kazagumo.search(query, { engine });
 
           if (results?.tracks?.length) {
             // Filtrar por duración
