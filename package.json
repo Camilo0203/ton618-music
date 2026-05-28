@@ -10,16 +10,16 @@
     "lavalink": "java -Dspring.cloud.config.enabled=false -Dspring.config.location=lavalink/application.yml -jar lavalink/Lavalink.jar"
   },
   "dependencies": {
-    "discord.js": "^14.25.1",
-    "shoukaku": "^4.3.0",
+    "discord.js": "^14.26.4",
+    "dotenv": "^17.4.2",
     "kazagumo": "^3.4.3",
-    "dotenv": "^16.6.1",
     "mongodb": "^7.1.0",
-    "youtubei.js": "^13.3.0",
     "playwright": "^1.52.0",
-    "undici": "^7.8.0",
+    "shoukaku": "^4.3.0",
+    "undici": "^7.26.0",
     "winston": "^3.17.0",
-    "ws": "^8.18.2"
+    "ws": "^8.18.2",
+    "youtubei.js": "^17.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

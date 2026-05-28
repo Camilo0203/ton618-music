@@ -36,15 +36,12 @@ const client = new Client({
 const youtubeTokenService = new YouTubeTokenService();
 let voiceMonitor = null;
 
+client.musicManager = new MusicManager(client);
+voiceMonitor = new VoiceStateMonitor(client, client.musicManager);
+voiceMonitor.start();
+
 client.once("clientReady", async () => {
   log.info("Client ready", { tag: client.user.tag, guilds: client.guilds.cache.size });
-
-  // Iniciar MusicManager
-  client.musicManager = new MusicManager(client);
-
-  // Iniciar monitoreo de voice states
-  voiceMonitor = new VoiceStateMonitor(client, client.musicManager);
-  voiceMonitor.start();
 
   // Iniciar servicio de tokens de YouTube (en background, no bloquea startup)
   youtubeTokenService.start().catch((err) => {
