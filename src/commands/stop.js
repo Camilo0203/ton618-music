@@ -4,6 +4,7 @@ const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const { errorEmbed } = require("../utils/musicEmbeds");
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
+const { ensureDeferred } = require("../utils/interactionResponses");
 
 const log = createLogger("StopCommand");
 
@@ -16,7 +17,7 @@ module.exports = {
   category: "music",
 
   async execute(interaction) {
-    await interaction.deferReply();
+    if (!(await ensureDeferred(interaction))) return;
 
     const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
     const guildId = interaction.guildId;

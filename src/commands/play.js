@@ -23,6 +23,7 @@ const {
 } = require("../utils/musicEmbeds");
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
+const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
 
 const log = createLogger("PlayCommand");
 
@@ -43,16 +44,14 @@ module.exports = {
   category: "music",
 
   async execute(interaction) {
-    if (!interaction.deferred && !interaction.replied) {
-      await interaction.deferReply();
-    }
+    if (!(await ensureDeferred(interaction))) return;
 
     const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
     const member = interaction.guild?.members?.cache?.get(interaction.user.id);
     const voiceChannel = member?.voice?.channel;
 
     if (!voiceChannel) {
-      return interaction.editReply({
+      return safeRespond(interaction, {
         embeds: [errorEmbed(t(language, "error_voice_required"), language)],
       });
     }
@@ -60,7 +59,7 @@ module.exports = {
     const botMember = interaction.guild.members.me;
     const perms = voiceChannel.permissionsFor(botMember);
     if (!perms?.has("Connect") || !perms?.has("Speak")) {
-      return interaction.editReply({
+      return safeRespond(interaction, {
         embeds: [errorEmbed(t(language, "error_bot_permissions"), language)],
       });
     }
@@ -85,7 +84,7 @@ module.exports = {
       (query.includes("open.spotify.com/playlist") || query.includes("open.spotify.com/album")) &&
       !limits.spotifyEnabled;
     if (isSpotifyPlaylist) {
-      return interaction.editReply({
+      return safeRespond(interaction, {
         embeds: [proOnlyEmbed(t(language, "spotify_pro_only"), UPGRADE_URL, language)],
       });
     }
@@ -93,7 +92,7 @@ module.exports = {
     const musicManager = interaction.client.musicManager;
     if (!musicManager) {
       log.error("musicManager not available — client not ready", { guildId });
-      return interaction.editReply({
+      return safeRespond(interaction, {
         embeds: [errorEmbed(t(language, "error_lavalink"), language)],
       });
     }
@@ -109,7 +108,7 @@ module.exports = {
       });
     } catch (err) {
       log.error("Failed to create player", { guildId, error: err.message, stack: err.stack });
-      return interaction.editReply({
+      return safeRespond(interaction, {
         embeds: [errorEmbed(t(language, "error_lavalink"), language)],
       });
     }
@@ -130,20 +129,20 @@ module.exports = {
         userMsg = t(language, "error_no_results", { query });
       }
 
-      return interaction.editReply({
+      return safeRespond(interaction, {
         embeds: [errorEmbed(userMsg, language)],
       });
     }
 
     if (!result?.tracks?.length) {
-      return interaction.editReply({
+      return safeRespond(interaction, {
         embeds: [errorEmbed(t(language, "error_no_results", { query }), language)],
       });
     }
 
     // Playlists solo en PRO
     if (result.type?.toLowerCase?.() === "playlist" && !limits.playlistEnabled) {
-      return interaction.editReply({
+      return safeRespond(interaction, {
         embeds: [proOnlyEmbed(t(language, "playlist_pro_only"), UPGRADE_URL, language)],
       });
     }
@@ -164,13 +163,13 @@ module.exports = {
           await player.play();
         } catch (err) {
           log.error("Failed to start playlist playback", { guildId, error: err.message });
-          return interaction.editReply({
+          return safeRespond(interaction, {
             embeds: [errorEmbed(t(language, "error_play"), language)],
           });
         }
       }
 
-      return interaction.editReply({
+      return safeRespond(interaction, {
         embeds: [playlistAddedEmbed(result.playlistName || "Playlist", added, tier, language)],
       });
     }
@@ -188,7 +187,7 @@ module.exports = {
           tier === "free"
             ? t(language, "error_queue_full_free", { max, url: UPGRADE_URL })
             : t(language, "error_queue_full_pro", { max });
-        return interaction.editReply({ embeds: [warningEmbed(msg, tier, language)] });
+        return safeRespond(interaction, { embeds: [warningEmbed(msg, tier, language)] });
       }
 
       if (enqueueResult.reason?.startsWith("too_long")) {
@@ -197,10 +196,10 @@ module.exports = {
           tier === "free"
             ? t(language, "error_too_long_free", { maxMin, url: UPGRADE_URL })
             : t(language, "error_too_long_pro", { maxMin });
-        return interaction.editReply({ embeds: [warningEmbed(msg, tier, language)] });
+        return safeRespond(interaction, { embeds: [warningEmbed(msg, tier, language)] });
       }
 
-      return interaction.editReply({
+      return safeRespond(interaction, {
         embeds: [errorEmbed(t(language, "error_add_track"), language)],
       });
     }
@@ -210,19 +209,19 @@ module.exports = {
         await player.play();
       } catch (err) {
         log.error("Failed to start track playback", { guildId, track: track.title, error: err.message });
-        return interaction.editReply({
+        return safeRespond(interaction, {
           embeds: [errorEmbed(t(language, "error_play"), language)],
         });
       }
       log.info("Now playing", { guildId, track: track.title });
-      return interaction.editReply({
+      return safeRespond(interaction, {
         embeds: [nowPlayingEmbed(track, player, tier, language)],
       });
     }
 
     const position = player.queue.size;
     log.info("Track added to queue", { guildId, track: track.title, position });
-    return interaction.editReply({
+    return safeRespond(interaction, {
       embeds: [addedToQueueEmbed(track, position, tier, language)],
     });
   },

@@ -9,6 +9,7 @@ const { resolveGuildTier } = require("../utils/premiumResolver");
 const { errorEmbed, warningEmbed } = require("../utils/musicEmbeds");
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
+const { ensureDeferred } = require("../utils/interactionResponses");
 
 const log = createLogger("LoopCommand");
 const UPGRADE_URL = process.env.PRO_UPGRADE_URL || "https://ton618.app/pricing";
@@ -35,7 +36,7 @@ module.exports = {
   category: "music",
 
   async execute(interaction) {
-    await interaction.deferReply();
+    if (!(await ensureDeferred(interaction))) return;
 
     const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
     const LOOP_LABELS = {

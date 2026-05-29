@@ -5,6 +5,7 @@ const { resolveGuildTier } = require("../utils/premiumResolver");
 const { nowPlayingEmbed, errorEmbed, formatDuration } = require("../utils/musicEmbeds");
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
+const { ensureDeferred } = require("../utils/interactionResponses");
 
 const log = createLogger("NowPlayingCommand");
 
@@ -17,7 +18,7 @@ module.exports = {
   category: "music",
 
   async execute(interaction) {
-    await interaction.deferReply();
+    if (!(await ensureDeferred(interaction))) return;
 
     const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
     const musicManager = interaction.client.musicManager;

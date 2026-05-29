@@ -9,6 +9,7 @@ const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const { errorEmbed } = require("../utils/musicEmbeds");
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
+const { ensureDeferred } = require("../utils/interactionResponses");
 
 const log = createLogger("MusicStatusCommand");
 const OWNER_ID = process.env.OWNER_ID;
@@ -40,7 +41,7 @@ module.exports = {
       });
     }
 
-    await interaction.deferReply({ ephemeral: true });
+    if (!(await ensureDeferred(interaction, { ephemeral: true }))) return;
 
     const musicManager = interaction.client.musicManager;
     if (!musicManager) {

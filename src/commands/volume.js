@@ -6,6 +6,7 @@ const { TIER_LIMITS } = require("../config/lavalinkConfig");
 const { errorEmbed, warningEmbed } = require("../utils/musicEmbeds");
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
+const { ensureDeferred } = require("../utils/interactionResponses");
 
 const log = createLogger("VolumeCommand");
 
@@ -26,7 +27,7 @@ module.exports = {
   category: "music",
 
   async execute(interaction) {
-    await interaction.deferReply();
+    if (!(await ensureDeferred(interaction))) return;
 
     const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
     const voiceChannel = interaction.guild?.members?.cache?.get(interaction.user.id)?.voice?.channel;
