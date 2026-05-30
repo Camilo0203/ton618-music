@@ -18,7 +18,7 @@ if (fs.existsSync(envPath)) {
 module.exports = {
   apps: [
     {
-      name: 'lavalink-pro',
+      name: 'lavalink',
       script: './scripts/lavalink-wrapper.js',
       args: path.join(__dirname, 'lavalink', 'application.yml'),
       instances: 1,
@@ -30,27 +30,8 @@ module.exports = {
         NODE_ENV: 'production',
         ...envVars
       },
-      error_file: './lavalink/logs/pro-err.log',
-      out_file: './lavalink/logs/pro-out.log',
-      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-      merge_logs: true,
-      kill_timeout: 15000
-    },
-    {
-      name: 'lavalink-free',
-      script: './scripts/lavalink-wrapper.js',
-      args: path.join(__dirname, 'lavalink', 'application-free.yml'),
-      instances: 1,
-      autorestart: true,
-      watch: false,
-      max_memory_restart: '1G',
-      env: {
-        SERVER_PORT: 2334,
-        NODE_ENV: 'production',
-        ...envVars
-      },
-      error_file: './lavalink/logs/free-err.log',
-      out_file: './lavalink/logs/free-out.log',
+      error_file: './lavalink/logs/lavalink-err.log',
+      out_file: './lavalink/logs/lavalink-out.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       merge_logs: true,
       kill_timeout: 15000

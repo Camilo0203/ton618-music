@@ -43,6 +43,10 @@ lavalink:
     useSeekGhosting: true
     youtubeSearchEnabled: true
     soundcloudSearchEnabled: true
+    ratelimit:
+      ipBlocks: ["2605:a144:2331:1378::/64"]
+      excludedIps: []
+      strategy: "RotatingNanoSwitch"
 
 plugins:
   youtube:

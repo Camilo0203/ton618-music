@@ -41,7 +41,8 @@ function getNode(prefix) {
 
 const LAVALINK_NODES = {
   PRO: getNode("PRO"),
-  FREE: getNode("FREE"),
+  // FREE reusa el mismo nodo que PRO (configuración de nodo único)
+  FREE: getNode("PRO"),
 };
 
 /** Límites centralizados en @ton618/shared, sobreescribibles vía env vars */
