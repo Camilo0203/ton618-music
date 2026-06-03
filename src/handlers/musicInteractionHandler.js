@@ -25,6 +25,12 @@ const userCooldowns = new Map();
 const guildCooldowns = new Map();
 const COOLDOWN_MS = parseInt(process.env.COMMAND_COOLDOWN_MS || "1500", 10);
 const GUILD_COOLDOWN_MS = parseInt(process.env.GUILD_COMMAND_COOLDOWN_MS || "800", 10);
+const ALLOWED_GUILD_IDS = new Set(
+  (process.env.MUSIC_ALLOWED_GUILD_ID || process.env.MUSIC_ALLOWED_GUILD_IDS || "")
+    .split(",")
+    .map((guildId) => guildId.trim())
+    .filter(Boolean)
+);
 
 function loadCommands() {
   const commandsPath = path.join(__dirname, "..", "commands");
@@ -58,6 +64,18 @@ async function musicInteractionHandler(interaction) {
   const command = commands.get(interaction.commandName);
   if (!command) return;
   if (command.category !== "music") return;
+
+  if (ALLOWED_GUILD_IDS.size > 0 && !ALLOWED_GUILD_IDS.has(interaction.guildId)) {
+    log.warn("Music command blocked outside allowed guild", {
+      command: interaction.commandName,
+      guildId: interaction.guildId,
+      userId: interaction.user.id,
+    });
+    return safeReply(interaction, {
+      content: "Music commands are only enabled in the support server.",
+      ephemeral: true,
+    });
+  }
 
   const userKey = `${interaction.user.id}:${interaction.commandName}`;
   const guildKey = `${interaction.guildId}:${interaction.commandName}`;
