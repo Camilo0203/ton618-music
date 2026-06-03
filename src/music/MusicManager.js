@@ -204,26 +204,33 @@ class MusicManager {
   }
 
   /**
-   * Adquiere un lock por guild para evitar race conditions.
+   * Adquiere un lock por guild para evitar race conditions, usando promesas encadenadas.
    */
   async _acquireGuildLock(guildId) {
-    const start = Date.now();
-    while (this.guildLocks.has(guildId)) {
-      if (Date.now() - start > GUILD_LOCK_TIMEOUT_MS) {
-        throw new Error(`Guild lock timeout for ${guildId}`);
-      }
-      await new Promise((r) => setTimeout(r, 50));
-    }
-
     let resolveLock;
-    const lockPromise = new Promise((resolve) => {
+    const nextLock = new Promise((resolve) => {
       resolveLock = resolve;
     });
-    this.guildLocks.set(guildId, lockPromise);
+
+    const previousLock = this.guildLocks.get(guildId);
+    this.guildLocks.set(guildId, nextLock);
+
+    if (previousLock) {
+      // Evitamos esperar indefinidamente si un lock se queda atascado
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error(`Guild lock timeout for ${guildId}`)), GUILD_LOCK_TIMEOUT_MS);
+      });
+      await Promise.race([previousLock, timeoutPromise]);
+    }
 
     return () => {
-      this.guildLocks.delete(guildId);
+      // Liberar lock actual resolviendolo
       resolveLock();
+      
+      // Limpiar map si somos el ultimo lock en la cola
+      if (this.guildLocks.get(guildId) === nextLock) {
+        this.guildLocks.delete(guildId);
+      }
     };
   }
 

@@ -1,0 +1,26 @@
+[Unit]
+Description=Lavalink Audio Server with Proxy
+After=network.target
+
+[Service]
+Type=simple
+User=lavalink
+WorkingDirectory=/opt/lavalink
+# Configuración del proxy IPRoyal (reemplaza con tus credenciales)
+Environment="PROXY_HOST=your-proxy-host.iproyal.com"
+Environment="PROXY_PORT=12321"
+Environment="PROXY_USER=your-username"
+Environment="PROXY_PASSWORD=your-password"
+# Configuración de JVM para proxy HTTP/HTTPS
+Environment="JAVA_OPTS=-Dhttp.proxyHost=${PROXY_HOST} -Dhttp.proxyPort=${PROXY_PORT} -Dhttp.proxyUser=${PROXY_USER} -Dhttp.proxyPassword=${PROXY_PASSWORD} -Dhttps.proxyHost=${PROXY_HOST} -Dhttps.proxyPort=${PROXY_PORT} -Dhttps.proxyUser=${PROXY_USER} -Dhttps.proxyPassword=${PROXY_PASSWORD} -Djava.net.useSystemProxies=false -Dhttp.nonProxyHosts='localhost|127.*|[::1]'"
+# Configuración de Lavalink
+Environment="SPOTIFY_CLIENT_ID="
+Environment="SPOTIFY_CLIENT_SECRET="
+Environment="YOUTUBE_PO_TOKEN="
+Environment="YOUTUBE_VISITOR_DATA="
+ExecStart=/usr/bin/java $JAVA_OPTS -jar Lavalink.jar
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

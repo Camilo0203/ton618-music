@@ -1,5 +1,5 @@
-# Configuración Lavalink para VPS (Contabo, Hetzner, etc.)
-# En VPS con IP limpia, YouTube funciona SIN plugins adicionales
+# Configuración Lavalink para VPS con Proxy Residencial Estático (IPRoyal)
+# Para servidor de soporte del bot mientras expandes
 
 server:
   port: 2333
@@ -12,13 +12,17 @@ spring:
 lavalink:
   plugins:
     # Plugin para Spotify, Apple Music, Deezer
-    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.2.0"
+    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.8.3"
       repository: "https://maven.topi.wtf/releases"
+    # Plugin YouTube para evitar bloqueos con proxy
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.18.1"
+      repository: "https://maven.lavalink.dev/releases"
+      snapshot: false
 
   server:
     password: "youshallnotpass"
     sources:
-      youtube: true        # Funciona en VPS sin bloqueos
+      youtube: false       # Usar plugin YouTube
       bandcamp: true
       soundcloud: true
       twitch: true
@@ -45,8 +49,28 @@ lavalink:
     useSeekGhosting: true
     youtubeSearchEnabled: true
     soundcloudSearchEnabled: true
+    ratelimit:
+      ipBlocks: ["0.0.0.0/0"]
+      excludedIps: []
+      strategy: "RotateOnBan"
 
 plugins:
+  youtube:
+    enabled: true
+    allowSearch: true
+    allowDirectVideoIds: true
+    allowDirectPlaylistIds: true
+    clients:
+      - MUSIC
+      - ANDROID_VR
+      - WEB
+      - WEBEMBEDDED
+    WEB:
+      poToken: ${YOUTUBE_PO_TOKEN:}
+      visitorData: ${YOUTUBE_VISITOR_DATA:}
+    oauth2:
+      enabled: false
+
   lavasrc:
     providers:
       - "ytsearch:\"%ISRC%\""

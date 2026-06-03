@@ -1,0 +1,97 @@
+name: Deploy Lavalink to VPS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'lavalink/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Lavalink.jar
+        run: |
+          curl -L -o lavalink/Lavalink.jar https://github.com/lavalink-devs/Lavalink/releases/download/4.0.0/Lavalink.jar
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            # Crear usuario lavalink si no existe
+            id -u lavalink >/dev/null 2>&1 || useradd -r -s /bin/false lavalink
+            
+            # Crear directorio
+            mkdir -p /opt/lavalink
+            chown lavalink:lavalink /opt/lavalink
+            
+            # Instalar Java si no está instalado
+            command -v java >/dev/null 2>&1 || apt update && apt install -y openjdk-17-jre-headless
+            
+            # Subir archivos
+            mkdir -p /opt/lavalink/plugins
+            cd /opt/lavalink
+            
+            # Esperar a que los archivos se suban (se hace en el siguiente paso)
+            echo "Directorio listo para recibir archivos"
+
+      - name: Upload files to VPS
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          password: ${{ secrets.VPS_PASSWORD }}
+          source: "lavalink/Lavalink.jar,lavalink/application-vps.yml,lavalink/lavalink.service"
+          target: "/opt/lavalink/"
+          strip_components: 1
+
+      - name: Configure and restart Lavalink
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            cd /opt/lavalink
+            
+            # Renombrar application-vps.yml a application.yml
+            mv application-vps.yml application.yml
+            
+            # Configurar credenciales del proxy en el servicio systemd
+            sed -i "s|your-proxy-host.iproyal.com|${{ secrets.PROXY_HOST }}|g" lavalink.service
+            sed -i "s|12321|${{ secrets.PROXY_PORT }}|g" lavalink.service
+            sed -i "s|your-username|${{ secrets.PROXY_USER }}|g" lavalink.service
+            sed -i "s|your-password|${{ secrets.PROXY_PASSWORD }}|g" lavalink.service
+            
+            # Configurar Spotify credentials si existen
+            if [ -n "${{ secrets.SPOTIFY_CLIENT_ID }}" ]; then
+              sed -i "s|Environment=\"SPOTIFY_CLIENT_ID=\"|Environment=\"SPOTIFY_CLIENT_ID=${{ secrets.SPOTIFY_CLIENT_ID }}\"|g" lavalink.service
+            fi
+            if [ -n "${{ secrets.SPOTIFY_CLIENT_SECRET }}" ]; then
+              sed -i "s|Environment=\"SPOTIFY_CLIENT_SECRET=\"|Environment=\"SPOTIFY_CLIENT_SECRET=${{ secrets.SPOTIFY_CLIENT_SECRET }}\"|g" lavalink.service
+            fi
+            
+            # Copiar servicio systemd
+            cp lavalink.service /etc/systemd/system/
+            
+            # Configurar permisos
+            chown -R lavalink:lavalink /opt/lavalink
+            chmod 644 /etc/systemd/system/lavalink.service
+            
+            # Recargar systemd y reiniciar servicio
+            systemctl daemon-reload
+            systemctl enable lavalink
+            systemctl restart lavalink
+            
+            # Configurar firewall
+            ufw allow 2333/tcp || true
+            
+            # Verificar estado
+            systemctl status lavalink --no-pager
