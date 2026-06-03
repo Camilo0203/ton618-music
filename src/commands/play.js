@@ -28,6 +28,9 @@ const { ensureDeferred, safeRespond } = require("../utils/interactionResponses")
 const log = createLogger("PlayCommand");
 
 const UPGRADE_URL = process.env.PRO_UPGRADE_URL || "https://ton618.app/pricing";
+const FORCED_TIER = ["free", "pro"].includes(process.env.MUSIC_FORCE_TIER)
+  ? process.env.MUSIC_FORCE_TIER
+  : null;
 
 const data = new SlashCommandBuilder()
   .setName("play")
@@ -67,15 +70,17 @@ module.exports = {
     const query = interaction.options.getString("query");
     const guildId = interaction.guildId;
 
-    let tier;
-    try {
-      tier = await Promise.race([
-        resolveGuildTier(guildId),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("tier_timeout")), 3000)),
-      ]);
-    } catch (err) {
-      log.warn("Tier resolution timeout, defaulting to free", { guildId, error: err.message });
-      tier = "free";
+    let tier = FORCED_TIER;
+    if (!tier) {
+      try {
+        tier = await Promise.race([
+          resolveGuildTier(guildId),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("tier_timeout")), 3000)),
+        ]);
+      } catch (err) {
+        log.warn("Tier resolution timeout, defaulting to free", { guildId, error: err.message });
+        tier = "free";
+      }
     }
     const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
 

@@ -40,27 +40,20 @@ class MusicManager {
     this.health = new NodeHealthMonitor();
     this.trackErrorHandler = null; // se inicializa después
 
-    const singleNode = LAVALINK_NODES.PRO.url === LAVALINK_NODES.FREE.url;
-
     const nodes = [
       {
-        name: LAVALINK_NODES.FREE.name,
-        url: LAVALINK_NODES.FREE.url,
-        auth: LAVALINK_NODES.FREE.auth,
-        secure: LAVALINK_NODES.FREE.secure,
-      },
-    ];
-
-    if (!singleNode) {
-      nodes.unshift({
         name: LAVALINK_NODES.PRO.name,
         url: LAVALINK_NODES.PRO.url,
         auth: LAVALINK_NODES.PRO.auth,
         secure: LAVALINK_NODES.PRO.secure,
-      });
-    }
+      },
+    ];
 
-    this._nodeForTier = singleNode ? { pro: "free", free: "free" } : { pro: "pro", free: "free" };
+    this._primaryNodeName = LAVALINK_NODES.PRO.name;
+    this._nodeForTier = {
+      pro: this._primaryNodeName,
+      free: this._primaryNodeName,
+    };
 
     // Registrar nodos en health monitor
     for (const node of nodes) {
@@ -244,7 +237,7 @@ class MusicManager {
       let player = this.kazagumo.players.get(guildId);
 
       if (!player) {
-        const nodeName = this._nodeForTier[tier] || "free";
+        const nodeName = this._primaryNodeName;
         const bestNode = await this._waitForConnectedNode(nodeName);
 
         player = await this.kazagumo.createPlayer({
@@ -285,13 +278,13 @@ class MusicManager {
    */
   async search(query, tier = "free") {
     const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
-    const engines = ["youtube", "soundcloud"];
+    const engines = ["youtube"];
     let lastError = null;
 
     for (let attempt = 0; attempt < MAX_RETRIES_SEARCH; attempt++) {
       for (const engine of engines) {
         try {
-          const nodeName = this._nodeForTier[tier] || "free";
+          const nodeName = this._primaryNodeName;
           const bestNode = await this._waitForConnectedNode(nodeName);
 
           log.debug("Searching", { engine, query: query.slice(0, 60), node: bestNode, attempt });
@@ -309,7 +302,7 @@ class MusicManager {
           }
         } catch (err) {
           lastError = err;
-          this.health.recordFailure(this._nodeForTier[tier] || "free", "search_failure");
+          this.health.recordFailure(this._primaryNodeName, "search_failure");
           log.warn("Search attempt failed", { engine, attempt, error: err.message });
         }
       }
