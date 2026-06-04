@@ -80,9 +80,9 @@ class YouTubeTokenService {
       if (!fs.existsSync(TOKEN_CACHE_FILE)) return;
       const raw = await fs.promises.readFile(TOKEN_CACHE_FILE, "utf8");
       const data = JSON.parse(raw);
-      if (data.poToken && data.visitorData && data.generatedAt) {
+      if (data.visitorData && data.generatedAt) {
         this.tokens = data;
-        log.debug("Loaded cached tokens from disk");
+        log.debug("Loaded cached tokens from disk", { hasPoToken: !!data.poToken });
       }
     } catch (err) {
       log.warn("Failed to load cached tokens", { error: err.message });
@@ -116,16 +116,23 @@ class YouTubeTokenService {
 
     try {
       await this._refreshViaInnertube();
-      log.info("Tokens refreshed via Innertube");
-      await this._saveCachedTokens();
-      return;
+      if (this.tokens.poToken) {
+        log.info("Tokens refreshed via Innertube (poToken + visitorData)");
+        await this._saveCachedTokens();
+        return;
+      }
+      log.warn("Innertube returned visitorData but no poToken, trying Playwright...");
     } catch (err) {
       log.warn("Innertube token refresh failed, trying Playwright fallback...", { error: err.message });
     }
 
     try {
       await this._refreshViaPlaywright();
-      log.info("Tokens refreshed via Playwright");
+      if (this.tokens.poToken) {
+        log.info("Tokens refreshed via Playwright (poToken + visitorData)");
+      } else {
+        log.warn("Playwright returned visitorData but no poToken");
+      }
       await this._saveCachedTokens();
       return;
     } catch (err) {
