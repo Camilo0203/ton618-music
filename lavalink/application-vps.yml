@@ -50,7 +50,7 @@ lavalink:
     youtubeSearchEnabled: true
     soundcloudSearchEnabled: true
     ratelimit:
-      ipBlocks: ["0.0.0.0/0"]
+      ipBlocks: ["89.35.94.72/32"]
       excludedIps: []
       strategy: "RotateOnBan"
 
