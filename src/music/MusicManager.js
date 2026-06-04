@@ -60,6 +60,9 @@ class MusicManager {
       this.health.registerNode(node.name, node.url);
     }
 
+    /** Buffer for voice events that arrive before Connection exists */
+    this.voiceEventBuffer = new Map();
+
     this.kazagumo = new Kazagumo(
       {
         defaultSearchEngine: "youtube",
@@ -74,7 +77,7 @@ class MusicManager {
         reconnectTries: parseInt(process.env.LAVALINK_RECONNECT_TRIES || "5", 10),
         reconnectInterval: parseInt(process.env.LAVALINK_RECONNECT_INTERVAL_MS || "5000", 10),
         restTimeout: parseInt(process.env.LAVALINK_REST_TIMEOUT_MS || "15000", 10),
-        moveOnDisconnect: true, // mover players si un nodo cae
+        moveOnDisconnect: true,
         resumable: true,
         resumableTimeout: 60,
         resumeByKeyOnly: false,
@@ -84,6 +87,7 @@ class MusicManager {
 
     this.trackErrorHandler = new TrackErrorHandler(this, this.health);
     this._registerEvents();
+    this._installVoiceEventBuffer();
 
     if (this.client.isReady?.() && this.kazagumo.shoukaku.nodes.size === 0) {
       this.kazagumo.shoukaku.id = this.client.user?.id || null;
@@ -103,6 +107,52 @@ class MusicManager {
         }
       }
     }, 5000);
+  }
+
+  _installVoiceEventBuffer() {
+    const ALLOWED = ["VOICE_SERVER_UPDATE", "VOICE_STATE_UPDATE"];
+
+    this.client.on("raw", (packet) => {
+      if (!ALLOWED.includes(packet.t)) return;
+      const guildId = packet.d?.guild_id;
+      if (!guildId) return;
+
+      const connection = this.kazagumo.shoukaku.connections.get(guildId);
+      if (connection) return;
+
+      if (!this.voiceEventBuffer.has(guildId)) {
+        this.voiceEventBuffer.set(guildId, []);
+      }
+      this.voiceEventBuffer.get(guildId).push(packet);
+
+      if (this.voiceEventBuffer.size > 200) {
+        const oldest = this.voiceEventBuffer.keys().next().value;
+        this.voiceEventBuffer.delete(oldest);
+      }
+    });
+  }
+
+  _replayVoiceEvents(guildId) {
+    const buffered = this.voiceEventBuffer.get(guildId);
+    if (!buffered || !buffered.length) return;
+
+    const connection = this.kazagumo.shoukaku.connections.get(guildId);
+    if (!connection) return;
+
+    for (const packet of buffered) {
+      try {
+        if (packet.t === "VOICE_SERVER_UPDATE") {
+          connection.setServerUpdate(packet.d);
+        } else if (packet.t === "VOICE_STATE_UPDATE" && packet.d?.user_id === this.client.user?.id) {
+          connection.setStateUpdate(packet.d);
+        }
+      } catch (err) {
+        log.warn("Failed to replay voice event", { guildId, type: packet.t, error: err.message });
+      }
+    }
+
+    this.voiceEventBuffer.delete(guildId);
+    log.info("Replayed buffered voice events", { guildId, count: buffered.length });
   }
 
   _registerEvents() {
@@ -244,7 +294,7 @@ class MusicManager {
           guildId,
           voiceId: voiceChannelId,
           textId: textChannelId,
-          deaf: true,
+          deaf: false,
           shardId,
           volume: Math.min(80, limits.maxVolume),
           nodeName: bestNode,
@@ -256,6 +306,8 @@ class MusicManager {
         player.createdAt = Date.now();
         this._startIdleTimer(guildId);
         log.info("Player created", { guildId, tier, node: bestNode });
+
+        this._replayVoiceEvents(guildId);
       } else if (player.voiceId !== voiceChannelId) {
         // Usuario cambió de canal, mover player
         try {
