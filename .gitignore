@@ -33,3 +33,6 @@ Thumbs.db
 # Build artifacts
 dist/
 build/
+lavalink/application-vps.yml
+lavalink/*.bak*
+lavalink/logs/
