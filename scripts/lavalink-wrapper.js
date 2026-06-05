@@ -58,11 +58,8 @@ function loadTokens() {
   }
 }
 
-const configPath = process.argv[2];
-if (!configPath) {
-  console.error("[lavalink-wrapper] Usage: node lavalink-wrapper.js <application.yml>");
-  process.exit(1);
-}
+const DEFAULT_CONFIG = path.join(ROOT, "lavalink", "application-vps.yml");
+const configPath = process.argv[2] || process.env.LAVALINK_CONFIG || DEFAULT_CONFIG;
 
 const tokens = { ...loadTokens(), ...loadEnvFile(ENV_MAIN), ...loadEnvFile(ENV_LAVA) };
 const env = { ...process.env, ...tokens };
