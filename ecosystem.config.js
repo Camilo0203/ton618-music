@@ -21,6 +21,7 @@ module.exports = {
       name: 'lavalink',
       script: './scripts/lavalink-wrapper.js',
       args: path.join(__dirname, 'lavalink', 'application-vps.yml'),
+      exec_mode: 'fork',
       instances: 1,
       autorestart: true,
       watch: false,
