@@ -80,7 +80,7 @@ const javaArgs = [
   `-Dhttps.proxyPassword=${PROXY_PASSWORD}`,
   "-Djava.net.useSystemProxies=false",
   "-Dhttp.nonProxyHosts=localhost|127.*|[::1]",
-  `-Dspring.config.location=file:${configPath}`,
+  `-Dspring.config.additional-location=file:${configPath}`,
   "-jar",
   LAVA_JAR,
 ];
