@@ -20,7 +20,7 @@ lavalink:
       snapshot: false
 
   server:
-    password: "youshallnotpass"
+    password: "CaMilo2030."
     sources:
       youtube: false       # Usar plugin YouTube
       bandcamp: true
