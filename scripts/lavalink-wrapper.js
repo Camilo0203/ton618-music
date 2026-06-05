@@ -97,6 +97,19 @@ const child = spawn("java", javaArgs, {
   cwd: ROOT,
 });
 
+function killChild() {
+  if (child && !child.killed) {
+    console.log("[lavalink-wrapper] Killing Lavalink child process...");
+    child.kill("SIGTERM");
+    setTimeout(() => {
+      if (!child.killed) child.kill("SIGKILL");
+    }, 3000);
+  }
+}
+
+process.on("SIGTERM", () => { killChild(); process.exit(0); });
+process.on("SIGINT", () => { killChild(); process.exit(0); });
+
 child.on("exit", (code) => {
   console.log(`[lavalink-wrapper] Lavalink exited with code ${code}`);
   process.exit(code ?? 0);
