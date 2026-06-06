@@ -2,6 +2,7 @@
 
 const { EmbedBuilder } = require("discord.js");
 const { t } = require("./i18n");
+const { paginateQueue } = require("./musicQueuePagination");
 
 const BRAND_NAME = "TON618 Music";
 const COLORS = Object.freeze({
@@ -229,11 +230,11 @@ function playlistAddedEmbed(playlistName, count, tier, language = "en") {
 }
 
 function createQueueEmbed(player, tier, page = 1, language = "en") {
-  const perPage = 10;
   const queue = getQueueTracks(player);
-  const totalPages = Math.max(1, Math.ceil(queue.length / perPage));
-  const safePage = Math.min(Math.max(1, Number(page) || 1), totalPages);
-  const pageTracks = queue.slice((safePage - 1) * perPage, safePage * perPage);
+  const pagination = paginateQueue(queue, page);
+  const totalPages = pagination.totalPages;
+  const safePage = pagination.page;
+  const pageTracks = pagination.tracks;
   const current = player?.queue?.current;
   const totalTracks = queue.length + (current ? 1 : 0);
   const approximateDuration = getApproximateQueueDuration(player);
@@ -265,7 +266,7 @@ function createQueueEmbed(player, tier, page = 1, language = "en") {
     embed.setDescription(t(language, "empty_queue"));
   } else {
     const lines = pageTracks.map((track, index) => {
-      const number = (safePage - 1) * perPage + index + 1;
+      const number = pagination.startIndex + index + 1;
       return `**${number}.** ${trackMarkdown(track, 75)} • \`${formatDuration(track.length)}\``;
     });
     embed.setDescription(`**${t(language, "up_next")}**\n${lines.join("\n")}`);

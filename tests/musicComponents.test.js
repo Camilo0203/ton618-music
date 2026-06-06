@@ -7,8 +7,13 @@ const { ButtonStyle } = require("discord.js");
 const {
   MUSIC_CONTROL_IDS,
   createPlayerControls,
+  createQueuePaginationControls,
   isMusicControlId,
 } = require("../src/utils/musicComponents");
+const { parseQueueCustomId } = require("../src/utils/musicQueuePagination");
+
+const OWNER_ID = "111111111111111111";
+const SESSION_ID = "loyw3v28";
 
 function makePlayer(overrides = {}) {
   return {
@@ -90,5 +95,56 @@ describe("music player controls", () => {
       createPlayerControls(null, "free", "en", { disabled: true })
     );
     assert.ok(disabledButtons.every((button) => button.disabled));
+  });
+});
+
+describe("music queue pagination controls", () => {
+  it("creates previous, next, and close buttons with safe IDs", () => {
+    const rows = createQueuePaginationControls({
+      ownerId: OWNER_ID,
+      sessionId: SESSION_ID,
+      page: 2,
+      totalItems: 25,
+      language: "en",
+    });
+    const buttons = buttonData(rows);
+
+    assert.equal(rows.length, 1);
+    assert.equal(buttons.length, 3);
+    assert.deepEqual(
+      buttons.map((button) => parseQueueCustomId(button.custom_id).action),
+      ["prev", "next", "close"]
+    );
+    assert.equal(parseQueueCustomId(buttons[0].custom_id).page, 1);
+    assert.equal(parseQueueCustomId(buttons[1].custom_id).page, 3);
+    assert.equal(buttons[0].disabled, false);
+    assert.equal(buttons[1].disabled, false);
+    assert.equal(buttons[2].style, ButtonStyle.Danger);
+  });
+
+  it("disables navigation at boundaries while keeping close enabled", () => {
+    const firstPage = buttonData(
+      createQueuePaginationControls({
+        ownerId: OWNER_ID,
+        sessionId: SESSION_ID,
+        page: 1,
+        totalItems: 15,
+      })
+    );
+    assert.equal(firstPage[0].disabled, true);
+    assert.equal(firstPage[1].disabled, false);
+    assert.notEqual(firstPage[2].disabled, true);
+
+    const empty = buttonData(
+      createQueuePaginationControls({
+        ownerId: OWNER_ID,
+        sessionId: SESSION_ID,
+        page: 1,
+        totalItems: 0,
+      })
+    );
+    assert.equal(empty[0].disabled, true);
+    assert.equal(empty[1].disabled, true);
+    assert.notEqual(empty[2].disabled, true);
   });
 });

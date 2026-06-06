@@ -6,6 +6,11 @@ const {
   ButtonStyle,
 } = require("discord.js");
 const { t } = require("./i18n");
+const {
+  QUEUE_ACTIONS,
+  createQueueCustomId,
+  getQueuePagination,
+} = require("./musicQueuePagination");
 
 const MUSIC_CONTROL_IDS = Object.freeze({
   PAUSE: "music:control:pause",
@@ -80,8 +85,56 @@ function createPlayerControls(player, tier = "free", language = "en", options = 
   return [primaryRow, secondaryRow];
 }
 
+function createQueuePaginationControls({
+  ownerId,
+  sessionId,
+  page = 1,
+  totalItems = 0,
+  language = "en",
+}) {
+  const pagination = getQueuePagination(totalItems, page);
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(
+        createQueueCustomId(
+          QUEUE_ACTIONS.PREVIOUS,
+          ownerId,
+          sessionId,
+          pagination.previousPage
+        )
+      )
+      .setLabel(t(language, "queue_previous"))
+      .setEmoji("\u25C0\uFE0F")
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(pagination.previousDisabled),
+    new ButtonBuilder()
+      .setCustomId(
+        createQueueCustomId(
+          QUEUE_ACTIONS.NEXT,
+          ownerId,
+          sessionId,
+          pagination.nextPage
+        )
+      )
+      .setLabel(t(language, "queue_next"))
+      .setEmoji("\u25B6\uFE0F")
+      .setStyle(ButtonStyle.Primary)
+      .setDisabled(pagination.nextDisabled),
+    new ButtonBuilder()
+      .setCustomId(
+        createQueueCustomId(QUEUE_ACTIONS.CLOSE, ownerId, sessionId)
+      )
+      .setLabel(t(language, "queue_close"))
+      .setEmoji("\u2716\uFE0F")
+      .setStyle(ButtonStyle.Danger)
+  );
+
+  return [row];
+}
+
 module.exports = {
   MUSIC_CONTROL_IDS,
   createPlayerControls,
+  createQueuePaginationControls,
   isMusicControlId,
 };

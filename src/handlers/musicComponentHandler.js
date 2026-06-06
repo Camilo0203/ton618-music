@@ -13,8 +13,18 @@ const {
 const {
   MUSIC_CONTROL_IDS,
   createPlayerControls,
+  createQueuePaginationControls,
   isMusicControlId,
 } = require("../utils/musicComponents");
+const {
+  QUEUE_ACTIONS,
+  QUEUE_CUSTOM_ID_PREFIX,
+  createQueueSessionId,
+  getQueuePagination,
+  getQueueTrackCount,
+  isQueueSessionCurrent,
+  parseQueueCustomId,
+} = require("../utils/musicQueuePagination");
 const {
   CONTROL_ERROR_CODES,
   MusicControlError,
@@ -59,9 +69,9 @@ async function acknowledgeButton(interaction) {
   }
 }
 
-async function followUpEphemeral(interaction, embed) {
+async function followUpEphemeral(interaction, embed, components = []) {
   try {
-    await interaction.followUp({ embeds: [embed], flags: 64 });
+    await interaction.followUp({ embeds: [embed], components, flags: 64 });
   } catch (error) {
     log.warn("Failed to send music control follow-up", {
       customId: interaction.customId,
@@ -167,9 +177,7 @@ async function runControl(interaction, language) {
 
   const service = new MusicControlService(musicManager);
   const player = service.getPlayer(interaction.guildId);
-  const requireQueue =
-    interaction.customId === MUSIC_CONTROL_IDS.SHUFFLE ||
-    interaction.customId === MUSIC_CONTROL_IDS.QUEUE;
+  const requireQueue = interaction.customId === MUSIC_CONTROL_IDS.SHUFFLE;
 
   try {
     service.validateController(interaction, player, { requireQueue });
@@ -259,9 +267,22 @@ async function runControl(interaction, language) {
       );
       break;
 
-    case MUSIC_CONTROL_IDS.QUEUE:
-      await followUpEphemeral(interaction, createQueueEmbed(player, tier, 1, language));
+    case MUSIC_CONTROL_IDS.QUEUE: {
+      const pagination = getQueuePagination(getQueueTrackCount(player.queue), 1);
+      const sessionId = createQueueSessionId(player);
+      await followUpEphemeral(
+        interaction,
+        createQueueEmbed(player, tier, pagination.page, language),
+        createQueuePaginationControls({
+          ownerId: interaction.user.id,
+          sessionId,
+          page: pagination.page,
+          totalItems: pagination.totalItems,
+          language,
+        })
+      );
       break;
+    }
 
     case MUSIC_CONTROL_IDS.VOLUME: {
       const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
@@ -278,6 +299,85 @@ async function runControl(interaction, language) {
   }
 }
 
+async function runQueuePagination(interaction, language) {
+  const parsed = parseQueueCustomId(interaction.customId);
+  if (!parsed) {
+    await followUpEphemeral(
+      interaction,
+      createMusicWarningEmbed(t(language, "control_unknown"), null, language)
+    );
+    return;
+  }
+
+  if (ALLOWED_GUILD_IDS.size > 0 && !ALLOWED_GUILD_IDS.has(interaction.guildId)) {
+    await followUpEphemeral(
+      interaction,
+      createMusicErrorEmbed(t(language, "control_unavailable_guild"), language)
+    );
+    return;
+  }
+
+  const musicManager = interaction.client?.musicManager;
+  if (!musicManager) {
+    await followUpEphemeral(
+      interaction,
+      createMusicErrorEmbed(t(language, "error_lavalink"), language)
+    );
+    return;
+  }
+  const service = new MusicControlService(musicManager);
+  const player = service.getPlayer(interaction.guildId);
+
+  try {
+    service.validateQueueController(interaction, player, parsed.ownerId);
+  } catch (error) {
+    if (error instanceof MusicControlError) {
+      await followUpEphemeral(
+        interaction,
+        createMusicErrorEmbed(t(language, "queue_not_authorized"), language)
+      );
+      return;
+    }
+    throw error;
+  }
+
+  if (parsed.action === QUEUE_ACTIONS.CLOSE) {
+    await editControlMessage(interaction, { components: [] });
+    return;
+  }
+
+  if (!player || !isQueueSessionCurrent(player, parsed.sessionId)) {
+    await editControlMessage(interaction, {
+      embeds: [
+        createMusicWarningEmbed(
+          t(language, "queue_session_expired"),
+          null,
+          language
+        ),
+      ],
+      components: [],
+    });
+    return;
+  }
+
+  const tier = await resolveTierSafely(interaction.guildId);
+  const pagination = getQueuePagination(
+    getQueueTrackCount(player.queue),
+    parsed.page
+  );
+
+  await editControlMessage(interaction, {
+    embeds: [createQueueEmbed(player, tier, pagination.page, language)],
+    components: createQueuePaginationControls({
+      ownerId: parsed.ownerId,
+      sessionId: parsed.sessionId,
+      page: pagination.page,
+      totalItems: pagination.totalItems,
+      language,
+    }),
+  });
+}
+
 async function musicComponentHandler(interaction) {
   if (!isMusicComponent(interaction)) return false;
   if (!(await acknowledgeButton(interaction))) return true;
@@ -285,8 +385,11 @@ async function musicComponentHandler(interaction) {
   const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
 
   try {
+    const task = interaction.customId.startsWith(`${QUEUE_CUSTOM_ID_PREFIX}:`)
+      ? runQueuePagination
+      : runControl;
     const handled = await withGuildControlLock(interaction.guildId || "dm", () =>
-      runControl(interaction, language)
+      task(interaction, language)
     );
     if (!handled) {
       await followUpEphemeral(

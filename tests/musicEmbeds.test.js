@@ -129,6 +129,21 @@ describe("premium music embeds", () => {
     assert.ok(firstPage.fields.some((field) => field.name === "Approx. duration"));
   });
 
+  it("clamps a stale page after the queue shrinks and handles an empty queue", () => {
+    const queue = Array.from({ length: 12 }, (_, index) => makeTrack(index + 1));
+    queue.current = makeTrack(99, { title: "Current Track" });
+    const player = { paused: false, position: 0, queue };
+
+    const clamped = createQueueEmbed(player, "free", 9, "en").toJSON();
+    assert.match(clamped.footer.text, /Page 2\/2/);
+    assert.equal((clamped.description.match(/^\*\*\d+\.\*\*/gm) || []).length, 2);
+
+    queue.splice(0);
+    const empty = createQueueEmbed(player, "free", 2, "es").toJSON();
+    assert.match(empty.footer.text, /PÃ¡gina 1\/1|Página 1\/1/);
+    assert.match(empty.description, /No hay mÃ¡s canciones|No hay más canciones/);
+  });
+
   it("applies consistent status colors and branding", () => {
     const error = createMusicErrorEmbed("Failure", "en").toJSON();
     const success = createMusicSuccessEmbed("Done", "Completed", { language: "en" }).toJSON();

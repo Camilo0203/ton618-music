@@ -65,6 +65,35 @@ class MusicControlService {
     return true;
   }
 
+  validateQueueController(interaction, player, ownerId) {
+    if (interaction.user?.id === ownerId) {
+      return true;
+    }
+    if (!player) {
+      throw new MusicControlError(CONTROL_ERROR_CODES.NO_PLAYER);
+    }
+
+    const cachedMember = interaction.guild?.members?.cache?.get(interaction.user?.id);
+    const userVoiceId = voiceChannelId(interaction.member) || voiceChannelId(cachedMember);
+    if (!userVoiceId) {
+      throw new MusicControlError(CONTROL_ERROR_CODES.USER_NOT_IN_VOICE);
+    }
+
+    const playerVoiceId = player.voiceId || null;
+    const botMember =
+      interaction.guild?.members?.me ||
+      interaction.guild?.members?.cache?.get(interaction.client?.user?.id);
+    const botVoiceId = voiceChannelId(botMember);
+    if (!playerVoiceId || !botVoiceId) {
+      throw new MusicControlError(CONTROL_ERROR_CODES.BOT_DISCONNECTED);
+    }
+    if (userVoiceId !== playerVoiceId || botVoiceId !== playerVoiceId) {
+      throw new MusicControlError(CONTROL_ERROR_CODES.DIFFERENT_VOICE_CHANNEL);
+    }
+
+    return true;
+  }
+
   togglePause(player) {
     const paused = !Boolean(player.paused);
     player.pause(paused);

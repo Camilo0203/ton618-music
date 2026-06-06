@@ -3,6 +3,12 @@
 const { SlashCommandBuilder } = require("discord.js");
 const { resolveGuildTier } = require("../utils/premiumResolver");
 const { createQueueEmbed, createMusicErrorEmbed } = require("../utils/musicEmbeds");
+const { createQueuePaginationControls } = require("../utils/musicComponents");
+const {
+  createQueueSessionId,
+  getQueuePagination,
+  getQueueTrackCount,
+} = require("../utils/musicQueuePagination");
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
 const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
@@ -44,10 +50,22 @@ module.exports = {
     }
 
     const tier = await resolveGuildTier(interaction.guildId);
-    const page = interaction.options.getInteger("pagina") ?? 1;
+    const requestedPage = interaction.options.getInteger("pagina") ?? 1;
+    const pagination = getQueuePagination(
+      getQueueTrackCount(player.queue),
+      requestedPage
+    );
+    const sessionId = createQueueSessionId(player);
 
     return safeRespond(interaction, {
-      embeds: [createQueueEmbed(player, tier, page, language)],
+      embeds: [createQueueEmbed(player, tier, pagination.page, language)],
+      components: createQueuePaginationControls({
+        ownerId: interaction.user.id,
+        sessionId,
+        page: pagination.page,
+        totalItems: pagination.totalItems,
+        language,
+      }),
     });
   },
 };

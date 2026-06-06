@@ -131,6 +131,35 @@ describe("MusicControlService validation", () => {
       CONTROL_ERROR_CODES.QUEUE_EMPTY
     );
   });
+
+  it("allows the queue owner outside voice and same-channel listeners", () => {
+    const ownerId = "111111111111111111";
+    const ownerInteraction = makeInteraction({ userVoiceId: null });
+    ownerInteraction.user.id = ownerId;
+    const service = new MusicControlService(null);
+
+    assert.equal(
+      service.validateQueueController(ownerInteraction, null, ownerId),
+      true
+    );
+    assert.equal(
+      service.validateQueueController(makeInteraction(), makePlayer(), ownerId),
+      true
+    );
+  });
+
+  it("rejects queue pagination from users outside the player channel", () => {
+    const service = new MusicControlService(null);
+    expectControlError(
+      () =>
+        service.validateQueueController(
+          makeInteraction({ userVoiceId: "voice-2" }),
+          makePlayer(),
+          "111111111111111111"
+        ),
+      CONTROL_ERROR_CODES.DIFFERENT_VOICE_CHANNEL
+    );
+  });
 });
 
 describe("MusicControlService actions", () => {
