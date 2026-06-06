@@ -19,10 +19,10 @@ const ENV_MAIN = path.join(ROOT, ".env");
 const LAVA_JAR = path.join(ROOT, "lavalink", "Lavalink.jar");
 
 // Proxy residencial IPRoyal
-const PROXY_HOST = process.env.PROXY_HOST || "89.35.94.72";
-const PROXY_PORT = process.env.PROXY_PORT || "12323";
-const PROXY_USER = process.env.PROXY_USER || "14a76da825113";
-const PROXY_PASSWORD = process.env.PROXY_PASSWORD || "f3b13bd96a";
+const PROXY_HOST = process.env.PROXY_HOST || "";
+const PROXY_PORT = process.env.PROXY_PORT || "";
+const PROXY_USER = process.env.PROXY_USER || "";
+const PROXY_PASSWORD = process.env.PROXY_PASSWORD || "";
 
 function loadEnvFile(filePath) {
   const env = {};
@@ -64,25 +64,33 @@ const configPath = process.argv[2] || process.env.LAVALINK_CONFIG || DEFAULT_CON
 const tokens = { ...loadTokens(), ...loadEnvFile(ENV_MAIN), ...loadEnvFile(ENV_LAVA) };
 const env = { ...process.env, ...tokens };
 
-// JVM proxy flags — todo el tráfico HTTP/HTTPS sale por el proxy residencial
+const proxyArgs = PROXY_HOST && PROXY_PORT
+  ? [
+    `-Dhttp.proxyHost=${PROXY_HOST}`,
+    `-Dhttp.proxyPort=${PROXY_PORT}`,
+    PROXY_USER ? `-Dhttp.proxyUser=${PROXY_USER}` : null,
+    PROXY_PASSWORD ? `-Dhttp.proxyPassword=${PROXY_PASSWORD}` : null,
+    `-Dhttps.proxyHost=${PROXY_HOST}`,
+    `-Dhttps.proxyPort=${PROXY_PORT}`,
+    PROXY_USER ? `-Dhttps.proxyUser=${PROXY_USER}` : null,
+    PROXY_PASSWORD ? `-Dhttps.proxyPassword=${PROXY_PASSWORD}` : null,
+    "-Djava.net.useSystemProxies=false",
+    "-Dhttp.nonProxyHosts=localhost|127.*|[::1]",
+  ].filter(Boolean)
+  : [];
+
+// JVM flags
 const javaArgs = [
   "-Djava.net.preferIPv4Stack=true",
-  `-Dhttp.proxyHost=${PROXY_HOST}`,
-  `-Dhttp.proxyPort=${PROXY_PORT}`,
-  `-Dhttp.proxyUser=${PROXY_USER}`,
-  `-Dhttp.proxyPassword=${PROXY_PASSWORD}`,
-  `-Dhttps.proxyHost=${PROXY_HOST}`,
-  `-Dhttps.proxyPort=${PROXY_PORT}`,
-  `-Dhttps.proxyUser=${PROXY_USER}`,
-  `-Dhttps.proxyPassword=${PROXY_PASSWORD}`,
-  "-Djava.net.useSystemProxies=false",
-  "-Dhttp.nonProxyHosts=localhost|127.*|[::1]",
+  ...proxyArgs,
   `-Dspring.config.additional-location=file:${configPath}`,
   "-jar",
   LAVA_JAR,
 ];
 
-console.log(`[lavalink-wrapper] Starting Lavalink with proxy ${PROXY_HOST}:${PROXY_PORT}`);
+console.log(PROXY_HOST && PROXY_PORT
+  ? `[lavalink-wrapper] Starting Lavalink with proxy ${PROXY_HOST}:${PROXY_PORT}`
+  : "[lavalink-wrapper] Starting Lavalink without proxy configuration");
 console.log(`[lavalink-wrapper] Config: ${configPath}`);
 if (tokens.YOUTUBE_PO_TOKEN) {
   console.log("[lavalink-wrapper] poToken injected");

@@ -29,10 +29,6 @@ module.exports = {
       env: {
         SERVER_PORT: 2333,
         NODE_ENV: 'production',
-        PROXY_HOST: '89.35.94.72',
-        PROXY_PORT: '12323',
-        PROXY_USER: '14a76da825113',
-        PROXY_PASSWORD: 'f3b13bd96a',
         ...envVars
       },
       error_file: './lavalink/logs/lavalink-err.log',

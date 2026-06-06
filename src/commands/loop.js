@@ -4,12 +4,17 @@
  * /loop — Repite la pista actual o la cola (PRO: cola, FREE: solo pista)
  */
 
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { SlashCommandBuilder } = require("discord.js");
 const { resolveGuildTier } = require("../utils/premiumResolver");
-const { errorEmbed, warningEmbed } = require("../utils/musicEmbeds");
+const {
+  COLORS,
+  createMusicErrorEmbed,
+  createMusicSuccessEmbed,
+  createMusicWarningEmbed,
+} = require("../utils/musicEmbeds");
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
-const { ensureDeferred } = require("../utils/interactionResponses");
+const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
 
 const log = createLogger("LoopCommand");
 const UPGRADE_URL = process.env.PRO_UPGRADE_URL || "https://ton618.app/pricing";
@@ -29,8 +34,6 @@ const data = new SlashCommandBuilder()
       )
   );
 
-const LOOP_EMOJIS = { track: "🔂", queue: "🔁", none: "❌" };
-
 module.exports = {
   data,
   category: "music",
@@ -48,21 +51,25 @@ module.exports = {
     const musicManager = interaction.client.musicManager;
     if (!musicManager) {
       log.error("musicManager not available", { guildId: interaction.guildId });
-      return interaction.editReply({ embeds: [errorEmbed(t(language, "error_lavalink"), language)] });
+      return safeRespond(interaction, {
+        embeds: [createMusicErrorEmbed(t(language, "error_lavalink"), language)],
+      });
     }
     const player = musicManager.kazagumo.players.get(interaction.guildId);
 
     if (!player) {
-      return interaction.editReply({ embeds: [errorEmbed(t(language, "loop_no_player"), language)] });
+      return safeRespond(interaction, {
+        embeds: [createMusicErrorEmbed(t(language, "loop_no_player"), language)],
+      });
     }
 
     const mode = interaction.options.getString("modo");
     const tier = await resolveGuildTier(interaction.guildId);
 
     if (mode === "queue" && tier !== "pro") {
-      return interaction.editReply({
+      return safeRespond(interaction, {
         embeds: [
-          warningEmbed(
+          createMusicWarningEmbed(
             t(language, "loop_queue_pro_only", { url: UPGRADE_URL }),
             tier,
             language
@@ -74,13 +81,17 @@ module.exports = {
     // Kazagumo loop modes: "none" | "track" | "queue"
     player.setLoop(mode);
 
-    return interaction.editReply({
+    return safeRespond(interaction, {
       embeds: [
-        new EmbedBuilder()
-          .setColor(mode === "none" ? 0xed4245 : 0x5865f2)
-          .setTitle(`${LOOP_EMOJIS[mode]} ${t(language, "loop_set", { label: LOOP_LABELS[mode] })}`)
-          .setDescription(t(language, "loop_set_desc", { mode: LOOP_LABELS[mode] }))
-          .setFooter({ text: tier === "pro" ? t(language, "tier_badge_pro") : t(language, "tier_badge_free") }),
+        createMusicSuccessEmbed(
+          t(language, "loop_set", { label: LOOP_LABELS[mode] }),
+          t(language, "loop_set_desc", { mode: LOOP_LABELS[mode] }),
+          {
+            color: mode === "none" ? COLORS.NEUTRAL : COLORS.PLAYING,
+            tier,
+            language,
+          }
+        ),
       ],
     });
   },

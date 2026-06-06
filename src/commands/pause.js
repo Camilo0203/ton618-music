@@ -1,9 +1,13 @@
 "use strict";
 
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
-const { errorEmbed } = require("../utils/musicEmbeds");
+const { SlashCommandBuilder } = require("discord.js");
+const {
+  COLORS,
+  createMusicErrorEmbed,
+  createMusicSuccessEmbed,
+} = require("../utils/musicEmbeds");
 const { t, normalizeLanguage } = require("../utils/i18n");
-const { ensureDeferred } = require("../utils/interactionResponses");
+const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
 const { createLogger } = require("../utils/logger");
 
 const log = createLogger("PauseCommand");
@@ -22,38 +26,46 @@ module.exports = {
     const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
     const voiceChannel = interaction.guild?.members?.cache?.get(interaction.user.id)?.voice?.channel;
     if (!voiceChannel) {
-      return interaction.editReply({ embeds: [errorEmbed(t(language, "pause_voice_required"), language)] });
+      return safeRespond(interaction, {
+        embeds: [createMusicErrorEmbed(t(language, "pause_voice_required"), language)],
+      });
     }
 
     const musicManager = interaction.client.musicManager;
     if (!musicManager) {
       log.error("musicManager not available", { guildId: interaction.guildId });
-      return interaction.editReply({ embeds: [errorEmbed(t(language, "error_lavalink"), language)] });
+      return safeRespond(interaction, {
+        embeds: [createMusicErrorEmbed(t(language, "error_lavalink"), language)],
+      });
     }
     const player = musicManager.kazagumo.players.get(interaction.guildId);
 
     if (!player) {
-      return interaction.editReply({ embeds: [errorEmbed(t(language, "pause_no_player"), language)] });
+      return safeRespond(interaction, {
+        embeds: [createMusicErrorEmbed(t(language, "pause_no_player"), language)],
+      });
     }
 
     if (player.paused) {
       await player.pause(false);
-      return interaction.editReply({
+      return safeRespond(interaction, {
         embeds: [
-          new EmbedBuilder()
-            .setColor(0x57f287)
-            .setTitle(t(language, "pause_resumed"))
-            .setDescription(t(language, "pause_resumed_desc")),
+          createMusicSuccessEmbed(
+            t(language, "pause_resumed"),
+            t(language, "pause_resumed_desc"),
+            { language }
+          ),
         ],
       });
     } else {
       await player.pause(true);
-      return interaction.editReply({
+      return safeRespond(interaction, {
         embeds: [
-          new EmbedBuilder()
-            .setColor(0xfee75c)
-            .setTitle(t(language, "pause_paused"))
-            .setDescription(t(language, "pause_paused_desc")),
+          createMusicSuccessEmbed(
+            t(language, "pause_paused"),
+            t(language, "pause_paused_desc"),
+            { color: COLORS.PAUSED, language }
+          ),
         ],
       });
     }

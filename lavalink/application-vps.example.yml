@@ -1,9 +1,9 @@
-# Configuración Lavalink para VPS con Proxy Residencial Estático (IPRoyal)
-# Para servidor de soporte del bot mientras expandes
+# Safe example for VPS Lavalink configuration.
+# Copy to lavalink/application-vps.yml on the VPS and provide secrets via environment variables.
 
 server:
-  port: 2333
-  address: 0.0.0.0
+  port: ${LAVALINK_PORT:2333}
+  address: ${LAVALINK_ADDRESS:0.0.0.0}
 
 spring:
   main:
@@ -11,18 +11,16 @@ spring:
 
 lavalink:
   plugins:
-    # Plugin para Spotify, Apple Music, Deezer
     - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.8.3"
       repository: "https://maven.topi.wtf/releases"
-    # Plugin YouTube para evitar bloqueos con proxy
     - dependency: "dev.lavalink.youtube:youtube-plugin:1.18.1"
       repository: "https://maven.lavalink.dev/releases"
       snapshot: false
 
   server:
-    password: "CaMilo2030."
+    password: ${LAVALINK_PRO_PASSWORD}
     sources:
-      youtube: false       # Usar plugin YouTube
+      youtube: false
       bandcamp: true
       soundcloud: true
       twitch: true
@@ -49,10 +47,6 @@ lavalink:
     useSeekGhosting: true
     youtubeSearchEnabled: true
     soundcloudSearchEnabled: true
-    ratelimit:
-      ipBlocks: ["89.35.94.72/32"]
-      excludedIps: []
-      strategy: "RotateOnBan"
 
 plugins:
   youtube:
@@ -61,15 +55,20 @@ plugins:
     allowDirectVideoIds: true
     allowDirectPlaylistIds: true
     clients:
-      - MUSIC
-      - ANDROID_VR
+      - TV
+      - TVHTML5_SIMPLY
+      - MWEB
       - WEB
       - WEBEMBEDDED
-    WEB:
-      poToken: ${YOUTUBE_PO_TOKEN:}
-      visitorData: ${YOUTUBE_VISITOR_DATA:}
-    oauth2:
-      enabled: false
+      - ANDROID_VR
+    oauth:
+      enabled: true
+      refreshToken: ${YOUTUBE_REFRESH_TOKEN}
+      skipInitialization: true
+
+    remoteCipher:
+      url: ${YOUTUBE_REMOTE_CIPHER_URL}
+      userAgent: "ton618-music"
 
   lavasrc:
     providers:
@@ -82,8 +81,8 @@ plugins:
       deezer: false
       yandexmusic: false
     spotify:
-      clientId: ""           # Opcional: para Spotify premium
-      clientSecret: ""       # Opcional: para Spotify premium
+      clientId: ${SPOTIFY_CLIENT_ID}
+      clientSecret: ${SPOTIFY_CLIENT_SECRET}
       countryCode: "US"
       playlistLoadLimit: 6
       albumLoadLimit: 6
@@ -101,3 +100,5 @@ logging:
   level:
     root: INFO
     lavalink: INFO
+    dev.lavalink.youtube: DEBUG
+    dev.lavalink.youtube.http.YoutubeOauth2Handler: INFO

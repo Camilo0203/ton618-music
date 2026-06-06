@@ -4,11 +4,15 @@
  * /shuffle — Mezcla la cola (SOLO PRO)
  */
 
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { SlashCommandBuilder } = require("discord.js");
 const { resolveGuildTier } = require("../utils/premiumResolver");
-const { errorEmbed, proOnlyEmbed } = require("../utils/musicEmbeds");
+const {
+  createMusicErrorEmbed,
+  createMusicSuccessEmbed,
+  proOnlyEmbed,
+} = require("../utils/musicEmbeds");
 const { t, normalizeLanguage } = require("../utils/i18n");
-const { ensureDeferred } = require("../utils/interactionResponses");
+const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
 const { createLogger } = require("../utils/logger");
 
 const log = createLogger("ShuffleCommand");
@@ -29,7 +33,7 @@ module.exports = {
     const tier = await resolveGuildTier(interaction.guildId);
 
     if (tier !== "pro") {
-      return interaction.editReply({
+      return safeRespond(interaction, {
         embeds: [proOnlyEmbed(t(language, "shuffle_pro_only"), UPGRADE_URL, language)],
       });
     }
@@ -37,23 +41,27 @@ module.exports = {
     const musicManager = interaction.client.musicManager;
     if (!musicManager) {
       log.error("musicManager not available", { guildId: interaction.guildId });
-      return interaction.editReply({ embeds: [errorEmbed(t(language, "error_lavalink"), language)] });
+      return safeRespond(interaction, {
+        embeds: [createMusicErrorEmbed(t(language, "error_lavalink"), language)],
+      });
     }
     const player = musicManager.kazagumo.players.get(interaction.guildId);
 
     if (!player || player.queue.size === 0) {
-      return interaction.editReply({ embeds: [errorEmbed(t(language, "shuffle_empty"), language)] });
+      return safeRespond(interaction, {
+        embeds: [createMusicErrorEmbed(t(language, "shuffle_empty"), language)],
+      });
     }
 
     player.queue.shuffle();
 
-    return interaction.editReply({
+    return safeRespond(interaction, {
       embeds: [
-        new EmbedBuilder()
-          .setColor(0x5865f2)
-          .setTitle(t(language, "shuffle_done"))
-          .setDescription(t(language, "shuffle_done_desc", { count: player.queue.size }))
-          .setFooter({ text: t(language, "tier_badge_pro") }),
+        createMusicSuccessEmbed(
+          t(language, "shuffle_done"),
+          t(language, "shuffle_done_desc", { count: player.queue.size }),
+          { tier, language }
+        ),
       ],
     });
   },

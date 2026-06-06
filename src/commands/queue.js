@@ -2,10 +2,10 @@
 
 const { SlashCommandBuilder } = require("discord.js");
 const { resolveGuildTier } = require("../utils/premiumResolver");
-const { queueEmbed, errorEmbed } = require("../utils/musicEmbeds");
+const { createQueueEmbed, createMusicErrorEmbed } = require("../utils/musicEmbeds");
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
-const { ensureDeferred } = require("../utils/interactionResponses");
+const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
 
 const log = createLogger("QueueCommand");
 
@@ -31,17 +31,23 @@ module.exports = {
     const musicManager = interaction.client.musicManager;
     if (!musicManager) {
       log.error("musicManager not available", { guildId: interaction.guildId });
-      return interaction.editReply({ embeds: [errorEmbed(t(language, "error_lavalink"), language)] });
+      return safeRespond(interaction, {
+        embeds: [createMusicErrorEmbed(t(language, "error_lavalink"), language)],
+      });
     }
     const player = musicManager.kazagumo.players.get(interaction.guildId);
 
     if (!player) {
-      return interaction.editReply({ embeds: [errorEmbed(t(language, "queue_no_player"), language)] });
+      return safeRespond(interaction, {
+        embeds: [createMusicErrorEmbed(t(language, "queue_no_player"), language)],
+      });
     }
 
     const tier = await resolveGuildTier(interaction.guildId);
     const page = interaction.options.getInteger("pagina") ?? 1;
 
-    return interaction.editReply({ embeds: [queueEmbed(player, tier, page, language)] });
+    return safeRespond(interaction, {
+      embeds: [createQueueEmbed(player, tier, page, language)],
+    });
   },
 };

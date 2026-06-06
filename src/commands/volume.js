@@ -1,12 +1,16 @@
 "use strict";
 
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { SlashCommandBuilder } = require("discord.js");
 const { resolveGuildTier } = require("../utils/premiumResolver");
 const { TIER_LIMITS } = require("../config/lavalinkConfig");
-const { errorEmbed, warningEmbed } = require("../utils/musicEmbeds");
+const {
+  createMusicErrorEmbed,
+  createMusicSuccessEmbed,
+  createMusicWarningEmbed,
+} = require("../utils/musicEmbeds");
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
-const { ensureDeferred } = require("../utils/interactionResponses");
+const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
 
 const log = createLogger("VolumeCommand");
 
@@ -32,18 +36,24 @@ module.exports = {
     const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
     const voiceChannel = interaction.guild?.members?.cache?.get(interaction.user.id)?.voice?.channel;
     if (!voiceChannel) {
-      return interaction.editReply({ embeds: [errorEmbed(t(language, "volume_voice_required"), language)] });
+      return safeRespond(interaction, {
+        embeds: [createMusicErrorEmbed(t(language, "volume_voice_required"), language)],
+      });
     }
 
     const musicManager = interaction.client.musicManager;
     if (!musicManager) {
       log.error("musicManager not available", { guildId: interaction.guildId });
-      return interaction.editReply({ embeds: [errorEmbed(t(language, "error_lavalink"), language)] });
+      return safeRespond(interaction, {
+        embeds: [createMusicErrorEmbed(t(language, "error_lavalink"), language)],
+      });
     }
     const player = musicManager.kazagumo.players.get(interaction.guildId);
 
     if (!player) {
-      return interaction.editReply({ embeds: [errorEmbed(t(language, "volume_no_player"), language)] });
+      return safeRespond(interaction, {
+        embeds: [createMusicErrorEmbed(t(language, "volume_no_player"), language)],
+      });
     }
 
     const tier = await resolveGuildTier(interaction.guildId);
@@ -56,20 +66,20 @@ module.exports = {
         tier === "free"
           ? t(language, "volume_free_max", { max: limits.maxVolume, url: UPGRADE_URL })
           : t(language, "volume_pro_max", { max: limits.maxVolume });
-      return interaction.editReply({ embeds: [warningEmbed(msg, tier, language)] });
+      return safeRespond(interaction, {
+        embeds: [createMusicWarningEmbed(msg, tier, language)],
+      });
     }
 
     await player.setVolume(requested);
 
-    const emoji = requested === 0 ? "🔇" : requested < 30 ? "🔈" : requested < 70 ? "🔉" : "🔊";
-
-    return interaction.editReply({
+    return safeRespond(interaction, {
       embeds: [
-        new EmbedBuilder()
-          .setColor(0x5865f2)
-          .setTitle(t(language, "volume_set", { emoji }))
-          .setDescription(t(language, "volume_set_desc", { volume: requested }))
-          .setFooter({ text: tier === "pro" ? t(language, "tier_badge_pro") : t(language, "tier_badge_free") }),
+        createMusicSuccessEmbed(
+          t(language, "volume_set"),
+          t(language, "volume_set_desc", { volume: requested }),
+          { tier, language }
+        ),
       ],
     });
   },

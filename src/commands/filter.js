@@ -5,12 +5,16 @@
  * Disponibles: bassboost, nightcore, vaporwave, reset
  */
 
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { SlashCommandBuilder } = require("discord.js");
 const { resolveGuildTier } = require("../utils/premiumResolver");
-const { errorEmbed, proOnlyEmbed } = require("../utils/musicEmbeds");
+const {
+  createMusicErrorEmbed,
+  createMusicSuccessEmbed,
+  proOnlyEmbed,
+} = require("../utils/musicEmbeds");
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
-const { ensureDeferred } = require("../utils/interactionResponses");
+const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
 
 const log = createLogger("FilterCommand");
 const UPGRADE_URL = process.env.PRO_UPGRADE_URL || "https://ton618.app/pricing";
@@ -49,55 +53,66 @@ module.exports = {
     const tier = await resolveGuildTier(interaction.guildId);
 
     if (tier !== "pro") {
-      return interaction.editReply({
+      return safeRespond(interaction, {
         embeds: [proOnlyEmbed(t(language, "filter_pro_only"), UPGRADE_URL, language)],
       });
     }
 
     const voiceChannel = interaction.guild?.members?.cache?.get(interaction.user.id)?.voice?.channel;
     if (!voiceChannel) {
-      return interaction.editReply({ embeds: [errorEmbed(t(language, "filter_voice_required"), language)] });
+      return safeRespond(interaction, {
+        embeds: [createMusicErrorEmbed(t(language, "filter_voice_required"), language)],
+      });
     }
 
     const musicManager = interaction.client.musicManager;
     if (!musicManager) {
       log.error("musicManager not available", { guildId: interaction.guildId });
-      return interaction.editReply({ embeds: [errorEmbed(t(language, "error_lavalink"), language)] });
+      return safeRespond(interaction, {
+        embeds: [createMusicErrorEmbed(t(language, "error_lavalink"), language)],
+      });
     }
     const player = musicManager.kazagumo.players.get(interaction.guildId);
 
     if (!player || !player.playing) {
-      return interaction.editReply({ embeds: [errorEmbed(t(language, "filter_no_player"), language)] });
+      return safeRespond(interaction, {
+        embeds: [createMusicErrorEmbed(t(language, "filter_no_player"), language)],
+      });
     }
 
     const filterName = interaction.options.getString("tipo");
     const result = await musicManager.applyFilter(player, filterName);
 
     if (!result.ok) {
-      return interaction.editReply({
-        embeds: [errorEmbed(`${t(language, "filter_applied")}: \`${result.reason}\``, language)],
+      log.warn("Filter could not be applied", {
+        guildId: interaction.guildId,
+        filter: filterName,
+        reason: result.reason,
+      });
+      return safeRespond(interaction, {
+        embeds: [createMusicErrorEmbed(t(language, "error_generic"), language)],
       });
     }
 
     if (filterName === "reset") {
-      return interaction.editReply({
+      return safeRespond(interaction, {
         embeds: [
-          new EmbedBuilder()
-            .setColor(0x5865f2)
-            .setTitle(t(language, "filter_removed"))
-            .setDescription(t(language, "filter_removed_desc"))
-            .setFooter({ text: t(language, "tier_badge_pro") }),
+          createMusicSuccessEmbed(
+            t(language, "filter_removed"),
+            t(language, "filter_removed_desc"),
+            { tier, language }
+          ),
         ],
       });
     }
 
-    return interaction.editReply({
+    return safeRespond(interaction, {
       embeds: [
-        new EmbedBuilder()
-          .setColor(0x5865f2)
-          .setTitle(t(language, "filter_applied"))
-          .setDescription(FILTER_DESCRIPTIONS[filterName] || filterName)
-          .setFooter({ text: t(language, "tier_badge_pro") }),
+        createMusicSuccessEmbed(
+          t(language, "filter_applied"),
+          FILTER_DESCRIPTIONS[filterName] || filterName,
+          { tier, language }
+        ),
       ],
     });
   },

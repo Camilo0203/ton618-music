@@ -1,19 +1,13 @@
 [Unit]
-Description=Lavalink Audio Server with IPRoyal Residential Proxy
+Description=Lavalink Audio Server
 After=network.target
 
 [Service]
 Type=simple
 User=root
 WorkingDirectory=/opt/ton618/ton618-music/lavalink
-# IPRoyal Residential Static Proxy
-Environment="PROXY_HOST=89.35.94.72"
-Environment="PROXY_PORT=12323"
-Environment="PROXY_USER=14a76da825113"
-Environment="PROXY_PASSWORD=f3b13bd96a"
-# JVM proxy flags — todo el tráfico HTTP/HTTPS sale por el proxy residencial
-Environment="JAVA_OPTS=-Djava.net.preferIPv4Stack=true -Dhttp.proxyHost=89.35.94.72 -Dhttp.proxyPort=12323 -Dhttp.proxyUser=14a76da825113 -Dhttp.proxyPassword=f3b13bd96a -Dhttps.proxyHost=89.35.94.72 -Dhttps.proxyPort=12323 -Dhttps.proxyUser=14a76da825113 -Dhttps.proxyPassword=f3b13bd96a -Djava.net.useSystemProxies=false -Dhttp.nonProxyHosts='localhost|127.*|[::1]'"
-ExecStart=/usr/bin/java $JAVA_OPTS -jar Lavalink.jar
+EnvironmentFile=-/opt/ton618/ton618-music/.env
+ExecStart=/usr/bin/java -Djava.net.preferIPv4Stack=true -Dhttp.proxyHost=${PROXY_HOST} -Dhttp.proxyPort=${PROXY_PORT} -Dhttp.proxyUser=${PROXY_USER} -Dhttp.proxyPassword=${PROXY_PASSWORD} -Dhttps.proxyHost=${PROXY_HOST} -Dhttps.proxyPort=${PROXY_PORT} -Dhttps.proxyUser=${PROXY_USER} -Dhttps.proxyPassword=${PROXY_PASSWORD} -Djava.net.useSystemProxies=false -Dhttp.nonProxyHosts=localhost|127.*|[::1] -jar Lavalink.jar
 Restart=always
 RestartSec=10
 

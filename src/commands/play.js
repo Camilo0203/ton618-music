@@ -14,11 +14,11 @@ const { SlashCommandBuilder } = require("discord.js");
 const { resolveGuildTier } = require("../utils/premiumResolver");
 const { TIER_LIMITS } = require("../config/lavalinkConfig");
 const {
-  nowPlayingEmbed,
+  createNowPlayingEmbed,
   addedToQueueEmbed,
   playlistAddedEmbed,
-  errorEmbed,
-  warningEmbed,
+  createMusicErrorEmbed,
+  createMusicWarningEmbed,
   proOnlyEmbed,
 } = require("../utils/musicEmbeds");
 const { t, normalizeLanguage } = require("../utils/i18n");
@@ -55,7 +55,7 @@ module.exports = {
 
     if (!voiceChannel) {
       return safeRespond(interaction, {
-        embeds: [errorEmbed(t(language, "error_voice_required"), language)],
+        embeds: [createMusicErrorEmbed(t(language, "error_voice_required"), language)],
       });
     }
 
@@ -63,7 +63,7 @@ module.exports = {
     const perms = voiceChannel.permissionsFor(botMember);
     if (!perms?.has("Connect") || !perms?.has("Speak")) {
       return safeRespond(interaction, {
-        embeds: [errorEmbed(t(language, "error_bot_permissions"), language)],
+        embeds: [createMusicErrorEmbed(t(language, "error_bot_permissions"), language)],
       });
     }
 
@@ -98,7 +98,7 @@ module.exports = {
     if (!musicManager) {
       log.error("musicManager not available — client not ready", { guildId });
       return safeRespond(interaction, {
-        embeds: [errorEmbed(t(language, "error_lavalink"), language)],
+        embeds: [createMusicErrorEmbed(t(language, "error_lavalink"), language)],
       });
     }
 
@@ -114,7 +114,7 @@ module.exports = {
     } catch (err) {
       log.error("Failed to create player", { guildId, error: err.message, stack: err.stack });
       return safeRespond(interaction, {
-        embeds: [errorEmbed(t(language, "error_lavalink"), language)],
+        embeds: [createMusicErrorEmbed(t(language, "error_lavalink"), language)],
       });
     }
 
@@ -127,21 +127,21 @@ module.exports = {
 
       let userMsg = t(language, "error_search");
       if (msg.includes("403") || msg.includes("bot") || msg.includes("sign in")) {
-        userMsg = "🚫 YouTube is blocking this request. Try a different song or wait a moment.";
+        userMsg = t(language, "error_youtube_blocked");
       } else if (msg.includes("timeout") || msg.includes("network")) {
-        userMsg = "⏳ The music server is taking too long to respond. Please try again.";
+        userMsg = t(language, "error_search_timeout");
       } else if (msg.includes("no results")) {
         userMsg = t(language, "error_no_results", { query });
       }
 
       return safeRespond(interaction, {
-        embeds: [errorEmbed(userMsg, language)],
+        embeds: [createMusicErrorEmbed(userMsg, language)],
       });
     }
 
     if (!result?.tracks?.length) {
       return safeRespond(interaction, {
-        embeds: [errorEmbed(t(language, "error_no_results", { query }), language)],
+        embeds: [createMusicErrorEmbed(t(language, "error_no_results", { query }), language)],
       });
     }
 
@@ -169,7 +169,7 @@ module.exports = {
         } catch (err) {
           log.error("Failed to start playlist playback", { guildId, error: err.message });
           return safeRespond(interaction, {
-            embeds: [errorEmbed(t(language, "error_play"), language)],
+            embeds: [createMusicErrorEmbed(t(language, "error_play"), language)],
           });
         }
       }
@@ -192,7 +192,9 @@ module.exports = {
           tier === "free"
             ? t(language, "error_queue_full_free", { max, url: UPGRADE_URL })
             : t(language, "error_queue_full_pro", { max });
-        return safeRespond(interaction, { embeds: [warningEmbed(msg, tier, language)] });
+        return safeRespond(interaction, {
+          embeds: [createMusicWarningEmbed(msg, tier, language)],
+        });
       }
 
       if (enqueueResult.reason?.startsWith("too_long")) {
@@ -201,11 +203,13 @@ module.exports = {
           tier === "free"
             ? t(language, "error_too_long_free", { maxMin, url: UPGRADE_URL })
             : t(language, "error_too_long_pro", { maxMin });
-        return safeRespond(interaction, { embeds: [warningEmbed(msg, tier, language)] });
+        return safeRespond(interaction, {
+          embeds: [createMusicWarningEmbed(msg, tier, language)],
+        });
       }
 
       return safeRespond(interaction, {
-        embeds: [errorEmbed(t(language, "error_add_track"), language)],
+        embeds: [createMusicErrorEmbed(t(language, "error_add_track"), language)],
       });
     }
 
@@ -215,12 +219,12 @@ module.exports = {
       } catch (err) {
         log.error("Failed to start track playback", { guildId, track: track.title, error: err.message });
         return safeRespond(interaction, {
-          embeds: [errorEmbed(t(language, "error_play"), language)],
+          embeds: [createMusicErrorEmbed(t(language, "error_play"), language)],
         });
       }
       log.info("Now playing", { guildId, track: track.title });
       return safeRespond(interaction, {
-        embeds: [nowPlayingEmbed(track, player, tier, language)],
+        embeds: [createNowPlayingEmbed(track, player, tier, language)],
       });
     }
 
