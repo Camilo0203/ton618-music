@@ -11,6 +11,7 @@ const { TIER_LIMITS } = require("../config/lavalinkConfig");
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
 const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
+const { MusicControlService } = require("../services/MusicControlService");
 
 const log = createLogger("SkipCommand");
 
@@ -82,10 +83,11 @@ module.exports = {
 
     const skipped = player.queue.current;
     const prevSize = player.queue.size;
+    const controlService = new MusicControlService(musicManager);
 
     try {
       for (let i = 0; i < amount && player.queue.size > 0; i++) {
-        await player.skip();
+        controlService.skipCurrent(player);
       }
     } catch (err) {
       log.error("Skip failed", { guildId, amount, error: err.message });

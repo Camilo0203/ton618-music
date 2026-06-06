@@ -6,6 +6,7 @@ const { createNowPlayingEmbed, createMusicErrorEmbed } = require("../utils/music
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
 const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
+const { createPlayerControls } = require("../utils/musicComponents");
 
 const log = createLogger("NowPlayingCommand");
 
@@ -47,6 +48,7 @@ module.exports = {
 
     return safeRespond(interaction, {
       embeds: [createNowPlayingEmbed(current, player, tier, language)],
+      components: createPlayerControls(player, tier, language),
     });
   },
 };

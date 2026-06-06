@@ -15,6 +15,7 @@ const {
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
 const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
+const { MusicControlService } = require("../services/MusicControlService");
 
 const log = createLogger("LoopCommand");
 const UPGRADE_URL = process.env.PRO_UPGRADE_URL || "https://ton618.app/pricing";
@@ -79,7 +80,8 @@ module.exports = {
     }
 
     // Kazagumo loop modes: "none" | "track" | "queue"
-    player.setLoop(mode);
+    const controlService = new MusicControlService(musicManager);
+    controlService.setLoop(player, mode);
 
     return safeRespond(interaction, {
       embeds: [

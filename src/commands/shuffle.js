@@ -14,6 +14,7 @@ const {
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
 const { createLogger } = require("../utils/logger");
+const { MusicControlService } = require("../services/MusicControlService");
 
 const log = createLogger("ShuffleCommand");
 const UPGRADE_URL = process.env.PRO_UPGRADE_URL || "https://ton618.app/pricing";
@@ -53,7 +54,8 @@ module.exports = {
       });
     }
 
-    player.queue.shuffle();
+    const controlService = new MusicControlService(musicManager);
+    controlService.shuffleQueue(player);
 
     return safeRespond(interaction, {
       embeds: [

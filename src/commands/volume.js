@@ -11,6 +11,7 @@ const {
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
 const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
+const { MusicControlService } = require("../services/MusicControlService");
 
 const log = createLogger("VolumeCommand");
 
@@ -71,7 +72,8 @@ module.exports = {
       });
     }
 
-    await player.setVolume(requested);
+    const controlService = new MusicControlService(musicManager);
+    await controlService.setVolume(player, requested);
 
     return safeRespond(interaction, {
       embeds: [

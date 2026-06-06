@@ -24,6 +24,7 @@ const {
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
 const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
+const { createPlayerControls } = require("../utils/musicComponents");
 
 const log = createLogger("PlayCommand");
 
@@ -225,6 +226,7 @@ module.exports = {
       log.info("Now playing", { guildId, track: track.title });
       return safeRespond(interaction, {
         embeds: [createNowPlayingEmbed(track, player, tier, language)],
+        components: createPlayerControls(player, tier, language),
       });
     }
 

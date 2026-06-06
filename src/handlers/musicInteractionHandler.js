@@ -15,6 +15,10 @@ const fs = require("fs");
 const path = require("path");
 const { Collection } = require("discord.js");
 const { createLogger } = require("../utils/logger");
+const {
+  isMusicComponent,
+  musicComponentHandler,
+} = require("./musicComponentHandler");
 
 const log = createLogger("InteractionHandler");
 
@@ -59,7 +63,10 @@ function isOnCooldown(map, key, durationMs) {
 }
 
 async function musicInteractionHandler(interaction) {
-  if (!interaction.isChatInputCommand()) return;
+  if (isMusicComponent(interaction)) {
+    return musicComponentHandler(interaction);
+  }
+  if (!interaction.isChatInputCommand()) return false;
 
   const command = commands.get(interaction.commandName);
   if (!command) return;

@@ -9,6 +9,7 @@ const {
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
 const { createLogger } = require("../utils/logger");
+const { MusicControlService } = require("../services/MusicControlService");
 
 const log = createLogger("PauseCommand");
 
@@ -46,8 +47,9 @@ module.exports = {
       });
     }
 
+    const controlService = new MusicControlService(musicManager);
     if (player.paused) {
-      await player.pause(false);
+      controlService.togglePause(player);
       return safeRespond(interaction, {
         embeds: [
           createMusicSuccessEmbed(
@@ -58,7 +60,7 @@ module.exports = {
         ],
       });
     } else {
-      await player.pause(true);
+      controlService.togglePause(player);
       return safeRespond(interaction, {
         embeds: [
           createMusicSuccessEmbed(

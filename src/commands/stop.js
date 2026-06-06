@@ -5,6 +5,7 @@ const { createMusicErrorEmbed, createMusicSuccessEmbed } = require("../utils/mus
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
 const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
+const { MusicControlService } = require("../services/MusicControlService");
 
 const log = createLogger("StopCommand");
 
@@ -44,7 +45,8 @@ module.exports = {
     }
 
     try {
-      await musicManager.destroyPlayer(guildId);
+      const controlService = new MusicControlService(musicManager);
+      await controlService.stop(guildId);
       log.info("Playback stopped by user", { guildId, userId: interaction.user.id });
     } catch (err) {
       log.error("Failed to destroy player", { guildId, error: err.message });
