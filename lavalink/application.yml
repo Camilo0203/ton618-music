@@ -14,7 +14,7 @@ lavalink:
       repository: "https://maven.lavalink.dev/releases"
       snapshot: false
   server:
-    password: "CaMilo2030."
+    password: ${LAVALINK_PRO_PASSWORD:defaultpassword}
     sources:
       youtube: false
       bandcamp: true

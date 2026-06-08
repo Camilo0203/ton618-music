@@ -4,6 +4,7 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  StringSelectMenuBuilder,
 } = require("discord.js");
 const { t } = require("./i18n");
 const {
@@ -137,4 +138,92 @@ module.exports = {
   createPlayerControls,
   createQueuePaginationControls,
   isMusicControlId,
+  createSearchSelectMenu,
+  createSearchPaginationButtons,
+  SEARCH_ACTIONS,
 };
+
+/**
+ * Create select menu for search results
+ */
+function createSearchSelectMenu(tracks, userId, options = {}) {
+  const language = options.language || 'en';
+  const placeholder = language === 'es' 
+    ? 'Selecciona una canción...' 
+    : 'Select a song...';
+
+  const selectOptions = tracks.map((track, idx) => {
+    const title = track.title.substring(0, 95);
+    const author = (track.author || 'Unknown').substring(0, 95);
+    const duration = formatTrackDuration(track.length || 0);
+    
+    return {
+      label: title,
+      description: `${author} • ${duration}`,
+      value: `${idx}`,
+      emoji: '🎵',
+    };
+  });
+
+  return new ActionRowBuilder().addComponents(
+    new StringSelectMenuBuilder()
+      .setCustomId(`music:search:select:${userId}`)
+      .setPlaceholder(placeholder)
+      .addOptions(selectOptions)
+  );
+}
+
+/**
+ * Create pagination buttons for search results
+ */
+const SEARCH_ACTIONS = {
+  PREVIOUS: 'prev',
+  NEXT: 'next',
+  CLOSE: 'close',
+};
+
+function createSearchPaginationButtons(userId, pagination, options = {}) {
+  const language = options.language || 'en';
+  
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`music:search:pagination:${userId}:${SEARCH_ACTIONS.PREVIOUS}:${pagination.pageNum - 1}`)
+      .setLabel(language === 'es' ? 'Anterior' : 'Previous')
+      .setEmoji('◀️')
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(!pagination.hasPrev),
+    new ButtonBuilder()
+      .setCustomId(`music:search:info:${userId}`)
+      .setLabel(`${pagination.pageNum + 1}/${pagination.totalPages}`)
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(true),
+    new ButtonBuilder()
+      .setCustomId(`music:search:pagination:${userId}:${SEARCH_ACTIONS.NEXT}:${pagination.pageNum + 1}`)
+      .setLabel(language === 'es' ? 'Siguiente' : 'Next')
+      .setEmoji('▶️')
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(!pagination.hasNext),
+    new ButtonBuilder()
+      .setCustomId(`music:search:pagination:${userId}:${SEARCH_ACTIONS.CLOSE}`)
+      .setLabel(language === 'es' ? 'Cerrar' : 'Close')
+      .setEmoji('❌')
+      .setStyle(ButtonStyle.Danger)
+  );
+}
+
+/**
+ * Format track duration
+ */
+function formatTrackDuration(ms) {
+  if (!ms || ms < 0) return '0:00';
+  
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}

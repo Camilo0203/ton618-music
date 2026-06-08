@@ -14,6 +14,8 @@ const { MusicManager } = require("./src/music/MusicManager");
 const { musicInteractionHandler } = require("./src/handlers/musicInteractionHandler");
 const { VoiceStateMonitor } = require("./src/services/VoiceStateMonitor");
 const { YouTubeTokenService } = require("./src/services/YouTubeTokenService");
+const { LavaliinkFailoverService } = require("./src/services/LavaliinkFailoverService");
+const { SearchCacheService } = require("./src/services/SearchCacheService");
 const { createLogger } = require("./src/utils/logger");
 
 const log = createLogger("Main");
@@ -36,26 +38,78 @@ const client = new Client({
 const youtubeTokenService = new YouTubeTokenService();
 let voiceMonitor = null;
 
+// Initialize failover service BEFORE MusicManager
+const failoverService = new LavaliinkFailoverService(client, {
+  healthCheckInterval: 30000,      // Check every 30s
+  healthCheckTimeout: 5000,        // 5s timeout per check
+  failureThreshold: 3,              // Switch after 3 failures
+  recoveryRetries: 5,               // Try 5 times to recover
+});
+
+// Listen to failover events
+failoverService.on('failover', (event) => {
+  log.error('LAVALINK FAILOVER TRIGGERED', {
+    from: event.from,
+    to: event.to,
+    timestamp: event.timestamp,
+  });
+});
+
+failoverService.on('nodeRecovered', (event) => {
+  log.info('Lavalink node recovered', { node: event.node });
+});
+
+failoverService.on('recoveryFailed', (event) => {
+  log.error('Lavalink node recovery FAILED', { node: event.node });
+});
+
+failoverService.on('criticalFailure', (event) => {
+  log.error('CRITICAL: ALL LAVALINK NODES FAILED', event);
+});
+
 client.musicManager = new MusicManager(client);
+client.failoverService = failoverService;
+client.searchCache = new SearchCacheService({
+  cacheTTL: 3600000,  // 1 hour
+  maxSessionTTL: 300000, // 5 minutes
+});
+
 voiceMonitor = new VoiceStateMonitor(client, client.musicManager);
 voiceMonitor.start();
 
 client.once("clientReady", async () => {
   log.info("Client ready", { tag: client.user.tag, guilds: client.guilds.cache.size });
 
+  // Initialize Lavalink failover service
+  try {
+    await failoverService.init();
+    log.info("Lavalink failover service initialized", {
+      primary: failoverService.state.activePrimary,
+      fallback: failoverService.state.activeFallback,
+    });
+  } catch (err) {
+    log.error("Failed to initialize failover service", { error: err.message });
+  }
+
   // Iniciar servicio de tokens de YouTube (en background, no bloquea startup)
   youtubeTokenService.start().catch((err) => {
     log.warn("YouTubeTokenService failed to start, continuing without tokens", { error: err.message });
   });
 
-  // Health check heartbeat
+  // Health check heartbeat with failover status
   setInterval(() => {
     const stats = client.musicManager.getStats();
+    const failoverStatus = failoverService.getStatus();
     log.debug("Health heartbeat", {
       players: stats.activePlayers,
       idleTimers: stats.idleTimers,
       guildLocks: stats.guildLocks,
       nodes: stats.nodes.map((n) => ({ name: n.name, state: n.state })),
+      lavalink: {
+        activePrimary: failoverStatus.activePrimary,
+        activeFallback: failoverStatus.activeFallback,
+        primaryHealth: failoverStatus.nodes[failoverStatus.activePrimary]?.status,
+      },
     });
   }, 60000);
 });
@@ -94,6 +148,24 @@ async function shutdown(signal) {
   if (shuttingDown) return;
   shuttingDown = true;
   log.info("Shutdown initiated", { signal });
+
+  // Stop failover service
+  try {
+    failoverService.stop();
+    log.info("Lavalink failover service stopped");
+  } catch (err) {
+    log.warn("Error stopping failover service", { error: err.message });
+  }
+
+  // Stop search cache service
+  try {
+    if (client.searchCache) {
+      client.searchCache.destroy();
+      log.info("Search cache service stopped");
+    }
+  } catch (err) {
+    log.warn("Error stopping search cache service", { error: err.message });
+  }
 
   // Detener aceptación de nuevas interacciones
   client.removeAllListeners("interactionCreate");

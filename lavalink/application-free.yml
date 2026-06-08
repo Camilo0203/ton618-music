@@ -8,11 +8,11 @@ spring:
 
 lavalink:
   plugins:
-    - dependency: "dev.lavalink.youtube:youtube-plugin:1.14.0"
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.18.1"
       repository: "https://maven.lavalink.dev/releases"
       snapshot: false
   server:
-    password: CaMilo2030.free
+    password: ${LAVALINK_FREE_PASSWORD:defaultpassword}
     sources:
       youtube: false
       bandcamp: true

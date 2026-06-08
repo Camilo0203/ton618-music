@@ -334,6 +334,51 @@ function proOnlyEmbed(featureName, upgradeUrl, language = "en") {
   return embed;
 }
 
+/**
+ * Create search results embed
+ */
+function createSearchResultEmbed(tracks, query, options = {}) {
+  const language = options.language || 'en';
+  const pageNum = options.pageNum ?? 0;
+  const totalPages = options.totalPages ?? 1;
+  const totalTracks = options.totalTracks ?? tracks.length;
+  const source = options.source || 'youtube';
+  const fromCache = options.fromCache || false;
+
+  const description = tracks
+    .map((track, idx) => {
+      const number = pageNum * 25 + idx + 1;
+      const title = truncate(track.title || 'Unknown', 70);
+      const author = truncate(track.author || 'Unknown', 50);
+      const duration = formatDuration(track.length || 0);
+      return `**${number}.** ${title}\n    👤 ${author} • ⏱️ ${duration}`;
+    })
+    .join('\n\n');
+
+  const title = language === 'es' 
+    ? `🔍 Resultados de búsqueda: "${query}"`
+    : `🔍 Search Results: "${query}"`;
+
+  const footerParts = [
+    `${SOURCE_LABELS[source] || source}`,
+    `${totalTracks} ${language === 'es' ? 'resultados' : 'results'}`,
+  ];
+
+  if (totalPages > 1) {
+    footerParts.push(`${language === 'es' ? 'Página' : 'Page'} ${pageNum + 1}/${totalPages}`);
+  }
+
+  if (fromCache) {
+    footerParts.push(language === 'es' ? '⚡ En caché' : '⚡ Cached');
+  }
+
+  return new EmbedBuilder()
+    .setColor(COLORS.PLAYING)
+    .setTitle(title)
+    .setDescription(description || (language === 'es' ? 'Sin resultados' : 'No results'))
+    .setFooter({ text: footerText(footerParts) });
+}
+
 module.exports = {
   BRAND_NAME,
   COLORS,
@@ -350,6 +395,7 @@ module.exports = {
   addedToQueueEmbed,
   playlistAddedEmbed,
   proOnlyEmbed,
+  createSearchResultEmbed,
   tierBadge,
   nowPlayingEmbed: createNowPlayingEmbed,
   queueEmbed: createQueueEmbed,

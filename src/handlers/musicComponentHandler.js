@@ -32,6 +32,11 @@ const {
 } = require("../services/MusicControlService");
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
+const {
+  handleSearchInteraction,
+  isSearchInteraction,
+  cleanupAllSessions: cleanupSearchSessions,
+} = require("./musicSearchHandler");
 
 const log = createLogger("MusicComponentHandler");
 const UPGRADE_URL = process.env.PRO_UPGRADE_URL || "https://ton618.app/pricing";
@@ -46,16 +51,21 @@ const ALLOWED_GUILD_IDS = new Set(
 
 function isMusicComponent(interaction) {
   return Boolean(
-    interaction?.isButton?.() &&
     typeof interaction.customId === "string" &&
-    interaction.customId.startsWith("music:")
+    interaction.customId.startsWith("music:") &&
+    (interaction?.isButton?.() || interaction?.isStringSelectMenu?.())
   );
 }
 
 async function acknowledgeButton(interaction) {
   if (interaction.deferred || interaction.replied) return false;
   try {
-    await interaction.deferUpdate();
+    // Select menus need deferReply instead of deferUpdate for some cases
+    if (interaction.isStringSelectMenu?.()) {
+      await interaction.deferReply();
+    } else {
+      await interaction.deferUpdate();
+    }
     return true;
   } catch (error) {
     log.warn("Failed to acknowledge music control", {
@@ -385,6 +395,20 @@ async function musicComponentHandler(interaction) {
   const language = normalizeLanguage(interaction.locale || interaction.guildLocale, "en");
 
   try {
+    // Route search interactions
+    if (isSearchInteraction(interaction.customId)) {
+      const musicManager = interaction.client?.musicManager;
+      const searchCache = interaction.client?.searchCache;
+      
+      await handleSearchInteraction(interaction, {
+        searchCache,
+        musicManager,
+        language,
+      });
+      return true;
+    }
+
+    // Route control interactions
     const task = interaction.customId.startsWith(`${QUEUE_CUSTOM_ID_PREFIX}:`)
       ? runQueuePagination
       : runControl;
