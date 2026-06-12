@@ -24,6 +24,11 @@ const MUSIC_CONTROL_IDS = Object.freeze({
 });
 
 const MUSIC_CONTROL_ID_SET = new Set(Object.values(MUSIC_CONTROL_IDS));
+const SEARCH_ACTIONS = Object.freeze({
+  PREVIOUS: "prev",
+  NEXT: "next",
+  CLOSE: "close",
+});
 
 function isMusicControlId(customId) {
   return MUSIC_CONTROL_ID_SET.has(customId);
@@ -176,12 +181,6 @@ function createSearchSelectMenu(tracks, userId, options = {}) {
 /**
  * Create pagination buttons for search results
  */
-const SEARCH_ACTIONS = {
-  PREVIOUS: 'prev',
-  NEXT: 'next',
-  CLOSE: 'close',
-};
-
 function createSearchPaginationButtons(userId, pagination, options = {}) {
   const language = options.language || 'en';
   
