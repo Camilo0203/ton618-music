@@ -1,186 +1,159 @@
-/**
- * /search command
- * Searches for songs without playing them
- * User can then select from results to play
- */
+"use strict";
 
-const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const { createLogger } = require('../utils/logger');
-const { createSearchResultEmbed } = require('../utils/musicEmbeds');
-const { createSearchSelectMenu, createSearchPaginationButtons } = require('../utils/musicComponents');
+const { SlashCommandBuilder } = require("discord.js");
+const { resolveGuildTier } = require("../utils/premiumResolver");
+const { TIER_LIMITS } = require("../config/lavalinkConfig");
+const {
+  createMusicErrorEmbed,
+  createSearchResultEmbed,
+} = require("../utils/musicEmbeds");
+const {
+  createSearchSelectMenu,
+  createSearchPaginationButtons,
+} = require("../utils/musicComponents");
+const { t, normalizeLanguage } = require("../utils/i18n");
+const { createLogger } = require("../utils/logger");
+const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
 
-const log = createLogger('SearchCommand');
+const log = createLogger("SearchCommand");
+
+const data = new SlashCommandBuilder()
+  .setName("search")
+  .setDescription("Busca canciones sin reproducirlas")
+  .setDescriptionLocalizations({
+    "en-US": "Search for songs without playing them",
+    "en-GB": "Search for songs without playing them",
+    "es-ES": "Busca canciones sin reproducirlas",
+    "es-419": "Busca canciones sin reproducirlas",
+  })
+  .addStringOption((option) =>
+    option
+      .setName("query")
+      .setDescription("Nombre de la canción o artista")
+      .setDescriptionLocalizations({
+        "en-US": "Song or artist name",
+        "en-GB": "Song or artist name",
+        "es-ES": "Nombre de la canción o artista",
+        "es-419": "Nombre de la canción o artista",
+      })
+      .setRequired(true)
+  )
+  .addStringOption((option) =>
+    option
+      .setName("source")
+      .setDescription("Fuente de búsqueda (YouTube o Spotify)")
+      .setDescriptionLocalizations({
+        "en-US": "Search source (YouTube or Spotify)",
+        "en-GB": "Search source (YouTube or Spotify)",
+        "es-ES": "Fuente de búsqueda (YouTube o Spotify)",
+        "es-419": "Fuente de búsqueda (YouTube o Spotify)",
+      })
+      .setRequired(false)
+      .addChoices(
+        { name: "YouTube", value: "youtube" },
+        { name: "Spotify", value: "spotify" }
+      )
+  );
 
 module.exports = {
-  data: new SlashCommandBuilder()
-    .setName('search')
-    .setDescription('Search for songs (EN: Search | ES: Buscar canciones)')
-    .setDescriptionLocalizations({
-      es_ES: 'Busca canciones sin reproducirlas',
-      'pt-BR': 'Procura músicas sem reproduzi-las',
-    })
-    .addStringOption(option =>
-      option
-        .setName('query')
-        .setDescription('Song name or artist (EN: Song name or artist | ES: Nombre de canción o artista)')
-        .setDescriptionLocalizations({
-          es_ES: 'Nombre de la canción o artista',
-          'pt-BR': 'Nome da música ou artista',
-        })
-        .setRequired(true)
-    )
-    .addStringOption(option =>
-      option
-        .setName('source')
-        .setDescription('Search source (EN: youtube | spotify | ES: youtube | spotify)')
-        .setDescriptionLocalizations({
-          es_ES: 'Fuente de búsqueda (youtube | spotify)',
-          'pt-BR': 'Fonte de busca (youtube | spotify)',
-        })
-        .setRequired(false)
-        .addChoices(
-          { name: 'YouTube', value: 'youtube' },
-          { name: 'Spotify', value: 'spotify' }
-        )
-    ),
+  data,
+  category: "music",
 
   async execute(interaction) {
-    try {
-      // Get options
-      const query = interaction.options.getString('query');
-      const source = interaction.options.getString('source') || 'youtube';
-      
-      // Get context from client
-      const musicManager = interaction.client?.musicManager;
-      const searchCache = interaction.client?.searchCache;
-      const language = interaction.locale === 'es' ? 'es' : 'en';
+    if (!(await ensureDeferred(interaction))) return;
 
-      if (!musicManager || !searchCache) {
-        return await interaction.reply({
-          content: language === 'es'
-            ? '❌ El servicio de música no está disponible'
-            : '❌ Music service is not available',
-          ephemeral: true,
-        });
-      }
+    const language = normalizeLanguage(interaction.locale || interaction.guildLocale);
+    const query = interaction.options.getString("query");
+    const source = interaction.options.getString("source") || "youtube";
+    const musicManager = interaction.client?.musicManager;
+    const searchCache = interaction.client?.searchCache;
 
-      const tier = await musicManager.resolveTierForUser(interaction.guild.id, interaction.user.id);
-
-      // Defer reply
-      await interaction.deferReply();
-
-      // Check cache first
-      let results = searchCache.getCache(query, source);
-      let fromCache = false;
-
-      if (!results) {
-        // Search if not cached
-        try {
-          results = await musicManager.search(query, tier, { engine: source });
-        } catch (error) {
-          log.error('Search error', { query, source, error: error.message });
-          return await interaction.editReply({
-            embeds: [
-              {
-                color: 0xff0000,
-                title: language === 'es' ? '❌ Error en búsqueda' : '❌ Search Error',
-                description: language === 'es' 
-                  ? `No se pudo buscar: ${error.message}`
-                  : `Failed to search: ${error.message}`,
-              },
-            ],
-          });
-        }
-
-        // Cache the results
-        searchCache.setCache(query, results, source);
-      } else {
-        fromCache = true;
-      }
-
-      // Validate results
-      if (!results || !results.tracks || results.tracks.length === 0) {
-        return await interaction.editReply({
-          embeds: [
-            {
-              color: 0xffaa00,
-              title: language === 'es' ? '🔍 Sin resultados' : '🔍 No Results',
-              description: language === 'es'
-                ? `No se encontraron canciones para: **${query}**`
-                : `No songs found for: **${query}**`,
-            },
-          ],
-        });
-      }
-
-      // Store tracks in session for pagination
-      searchCache.setSessionTracks(interaction.user.id, results.tracks);
-
-      // Get first page
-      const pagination = searchCache.getPaginatedResults(interaction.user.id, 0);
-
-      // Create response
-      const embed = createSearchResultEmbed(pagination.tracks, query, {
-        language,
-        pageNum: pagination.pageNum,
-        totalPages: pagination.totalPages,
-        totalTracks: pagination.totalTracks,
-        source,
-        fromCache,
+    if (!musicManager || !searchCache) {
+      log.error("musicManager or searchCache not available", {
+        guildId: interaction.guildId,
       });
-
-      const components = [
-        createSearchSelectMenu(pagination.tracks, interaction.user.id, { language }),
-      ];
-
-      // Add pagination buttons if needed
-      if (pagination.totalPages > 1) {
-        components.push(
-          createSearchPaginationButtons(interaction.user.id, pagination, { language })
-        );
-      }
-
-      await interaction.editReply({
-        embeds: [embed],
-        components,
+      return safeRespond(interaction, {
+        embeds: [createMusicErrorEmbed(t(language, "error_lavalink"), language)],
       });
-
-      log.info('Search executed', {
-        userId: interaction.user.id,
-        guildId: interaction.guild.id,
-        query,
-        source,
-        results: results.tracks.length,
-        fromCache,
-      });
-    } catch (error) {
-      log.error('Command execution error', { error: error.message, stack: error.stack });
-      
-      const errorMessage = interaction.locale === 'es' 
-        ? '❌ Error ejecutando comando'
-        : '❌ Error executing command';
-
-      if (interaction.deferred) {
-        await interaction.editReply({
-          embeds: [
-            {
-              color: 0xff0000,
-              description: errorMessage,
-            },
-          ],
-        });
-      } else {
-        await interaction.reply({
-          embeds: [
-            {
-              color: 0xff0000,
-              description: errorMessage,
-            },
-          ],
-          ephemeral: true,
-        });
-      }
     }
+
+    const tier = await resolveGuildTier(interaction.guildId);
+    if (source === "spotify" && tier !== "pro") {
+      return safeRespond(interaction, {
+        embeds: [createMusicErrorEmbed(t(language, "spotify_pro_only"), language)],
+      });
+    }
+
+    let results = searchCache.getCache(query, source);
+    let fromCache = false;
+
+    if (!results) {
+      try {
+        const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
+        results = await musicManager.search(query, tier);
+        if (limits.maxDurationSeconds && Array.isArray(results?.tracks)) {
+          results.tracks = results.tracks.filter(
+            (track) => !track.length || track.length / 1000 <= limits.maxDurationSeconds
+          );
+        }
+        searchCache.setCache(query, results, source);
+      } catch (error) {
+        log.error("Search error", {
+          guildId: interaction.guildId,
+          source,
+          error: error?.message || String(error),
+        });
+        return safeRespond(interaction, {
+          embeds: [createMusicErrorEmbed(t(language, "error_search"), language)],
+        });
+      }
+    } else {
+      fromCache = true;
+    }
+
+    if (!results?.tracks?.length) {
+      return safeRespond(interaction, {
+        embeds: [
+          createMusicErrorEmbed(
+            t(language, "error_no_results", { query }),
+            language
+          ),
+        ],
+      });
+    }
+
+    searchCache.setSessionTracks(interaction.user.id, results.tracks);
+    const pagination = searchCache.getPaginatedResults(interaction.user.id, 0);
+    const components = [
+      createSearchSelectMenu(pagination.tracks, interaction.user.id, { language }),
+    ];
+
+    if (pagination.totalPages > 1) {
+      components.push(
+        createSearchPaginationButtons(interaction.user.id, pagination, { language })
+      );
+    }
+
+    log.info("Search executed", {
+      userId: interaction.user.id,
+      guildId: interaction.guildId,
+      source,
+      results: results.tracks.length,
+      fromCache,
+    });
+
+    return safeRespond(interaction, {
+      embeds: [
+        createSearchResultEmbed(pagination.tracks, query, {
+          language,
+          pageNum: pagination.pageNum,
+          totalPages: pagination.totalPages,
+          totalTracks: pagination.totalTracks,
+          source,
+          fromCache,
+        }),
+      ],
+      components,
+    });
   },
-  category: 'music',
 };

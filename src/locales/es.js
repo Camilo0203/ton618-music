@@ -154,4 +154,8 @@ module.exports = {
   control_unknown: "Este control ya no está disponible.",
   control_unavailable_guild: "Los controles de música no están disponibles en este servidor.",
   control_busy: "Ya estoy procesando otro control. Intenta de nuevo en un instante.",
+  command_scope_only: "Los comandos de música solo están habilitados en el servidor configurado.",
+  command_user_cooldown: "Espera {{seconds}}s antes de volver a usar este comando.",
+  command_guild_cooldown: "Este servidor está procesando otro comando de música. Espera un momento.",
+  command_execution_error: "No pude completar ese comando de música. Intenta de nuevo.",
 };

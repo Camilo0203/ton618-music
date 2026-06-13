@@ -15,6 +15,7 @@ const fs = require("fs");
 const path = require("path");
 const { Collection } = require("discord.js");
 const { createLogger } = require("../utils/logger");
+const { t, normalizeLanguage } = require("../utils/i18n");
 const {
   isMusicComponent,
   musicComponentHandler,
@@ -71,6 +72,7 @@ async function musicInteractionHandler(interaction) {
   const command = commands.get(interaction.commandName);
   if (!command) return;
   if (command.category !== "music") return;
+  const language = normalizeLanguage(interaction.locale || interaction.guildLocale);
 
   if (ALLOWED_GUILD_IDS.size > 0 && !ALLOWED_GUILD_IDS.has(interaction.guildId)) {
     log.warn("Music command blocked outside allowed guild", {
@@ -79,7 +81,7 @@ async function musicInteractionHandler(interaction) {
       userId: interaction.user.id,
     });
     return safeReply(interaction, {
-      content: "Music commands are only enabled in the support server.",
+      content: t(language, "command_scope_only"),
       ephemeral: true,
     });
   }
@@ -91,7 +93,7 @@ async function musicInteractionHandler(interaction) {
   if (isOnCooldown(userCooldowns, userKey, COOLDOWN_MS)) {
     const remaining = Math.ceil((COOLDOWN_MS - (Date.now() - userCooldowns.get(userKey))) / 1000);
     return safeReply(interaction, {
-      content: `⏳ Please wait ${remaining}s before using this command again.`,
+      content: t(language, "command_user_cooldown", { seconds: remaining }),
       ephemeral: true,
     });
   }
@@ -99,7 +101,7 @@ async function musicInteractionHandler(interaction) {
   // Rate limit por guild (global para evitar flood)
   if (isOnCooldown(guildCooldowns, guildKey, GUILD_COOLDOWN_MS)) {
     return safeReply(interaction, {
-      content: "⏳ This server is processing a music command. Please wait a moment.",
+      content: t(language, "command_guild_cooldown"),
       ephemeral: true,
     });
   }
@@ -135,7 +137,7 @@ async function musicInteractionHandler(interaction) {
     });
 
     const payload = {
-      content: "❌ An error occurred while executing the music command. Please try again later.",
+      content: t(language, "command_execution_error"),
       ephemeral: true,
     };
 

@@ -12,15 +12,9 @@
 
 const { getTierLimitsFromEnv } = require("../shared");
 
-function requireEnv(key) {
-  const val = process.env[key];
-  if (!val) throw new Error(`Missing required env var: ${key}`);
-  return val;
-}
-
 function getNode(prefix) {
   const password = process.env[`LAVALINK_${prefix}_PASSWORD`];
-  if (!password && process.env.NODE_ENV !== "test") {
+  if (!password) {
     throw new Error(
       `LAVALINK_${prefix}_PASSWORD is required. ` +
       `Never use the default Lavalink password in production. ` +
@@ -34,16 +28,19 @@ function getNode(prefix) {
   return {
     name: prefix.toLowerCase(),
     url: `${host}:${port}`,
-    auth: password || "test-password",
+    auth: password,
     secure: (process.env[`LAVALINK_${prefix}_SECURE`] || "false") === "true",
   };
 }
 
-const LAVALINK_NODES = {
-  PRO: getNode("PRO"),
+function getLavalinkNodes() {
+  const primary = getNode("PRO");
+  return {
+    PRO: primary,
   // FREE reusa el mismo nodo que PRO (configuración de nodo único)
-  FREE: getNode("PRO"),
-};
+    FREE: primary,
+  };
+}
 
 /** Límites centralizados en @ton618/shared, sobreescribibles vía env vars */
 const TIER_LIMITS = getTierLimitsFromEnv();
@@ -61,4 +58,4 @@ const TIMEOUTS = {
   tierResolve: parseInt(process.env.TIER_RESOLVE_TIMEOUT_MS || "3000", 10),
 };
 
-module.exports = { LAVALINK_NODES, TIER_LIMITS, CIRCUIT_BREAKER, TIMEOUTS };
+module.exports = { getLavalinkNodes, TIER_LIMITS, CIRCUIT_BREAKER, TIMEOUTS };
