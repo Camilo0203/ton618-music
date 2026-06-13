@@ -25,10 +25,11 @@ const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
 const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
 const { createPlayerControls } = require("../utils/musicComponents");
+const { getProStoreUrl } = require("../utils/proStore");
 
 const log = createLogger("PlayCommand");
 
-const UPGRADE_URL = process.env.PRO_UPGRADE_URL || "https://ton618.app/pricing";
+const UPGRADE_URL = getProStoreUrl();
 const FORCED_TIER = ["free", "pro"].includes(process.env.MUSIC_FORCE_TIER)
   ? process.env.MUSIC_FORCE_TIER
   : null;

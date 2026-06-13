@@ -16,9 +16,10 @@ const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
 const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
 const { MusicControlService } = require("../services/MusicControlService");
+const { getProStoreUrl } = require("../utils/proStore");
 
 const log = createLogger("LoopCommand");
-const UPGRADE_URL = process.env.PRO_UPGRADE_URL || "https://ton618.app/pricing";
+const UPGRADE_URL = getProStoreUrl();
 
 const data = new SlashCommandBuilder()
   .setName("loop")

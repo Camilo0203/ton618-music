@@ -32,6 +32,7 @@ const {
 } = require("../services/MusicControlService");
 const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
+const { getProStoreUrl } = require("../utils/proStore");
 const {
   handleSearchInteraction,
   isSearchInteraction,
@@ -39,7 +40,7 @@ const {
 } = require("./musicSearchHandler");
 
 const log = createLogger("MusicComponentHandler");
-const UPGRADE_URL = process.env.PRO_UPGRADE_URL || "https://ton618.app/pricing";
+const UPGRADE_URL = getProStoreUrl();
 const controlLocks = new Map();
 
 const ALLOWED_GUILD_IDS = new Set(

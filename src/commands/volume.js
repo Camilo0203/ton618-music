@@ -12,6 +12,7 @@ const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
 const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
 const { MusicControlService } = require("../services/MusicControlService");
+const { getProStoreUrl } = require("../utils/proStore");
 
 const log = createLogger("VolumeCommand");
 
@@ -60,7 +61,7 @@ module.exports = {
     const tier = await resolveGuildTier(interaction.guildId);
     const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
     const requested = interaction.options.getInteger("nivel");
-    const UPGRADE_URL = process.env.PRO_UPGRADE_URL || "https://ton618.app/pricing";
+    const UPGRADE_URL = getProStoreUrl();
 
     if (requested > limits.maxVolume) {
       const msg =

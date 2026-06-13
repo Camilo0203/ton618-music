@@ -12,6 +12,7 @@ const { t, normalizeLanguage } = require("../utils/i18n");
 const { createLogger } = require("../utils/logger");
 const { ensureDeferred, safeRespond } = require("../utils/interactionResponses");
 const { MusicControlService } = require("../services/MusicControlService");
+const { getProStoreUrl } = require("../utils/proStore");
 
 const log = createLogger("SkipCommand");
 
@@ -73,7 +74,7 @@ module.exports = {
       return safeRespond(interaction, {
         embeds: [
           createMusicWarningEmbed(
-            t(language, "skip_pro_only", { url: process.env.PRO_UPGRADE_URL || "https://ton618.app/pricing" }),
+            t(language, "skip_pro_only", { url: getProStoreUrl() }),
             tier,
             language
           ),
